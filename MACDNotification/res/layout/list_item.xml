@@ -10,12 +10,14 @@
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:id="@+id/editTextSymbol"
+            android:textSize="12sp"
             android:inputType="text"/>
 
     <Button
             android:layout_width="wrap_content"
             android:layout_height="fill_parent"
             android:text="@string/validate"
+            android:textSize="12sp"
             android:id="@+id/buttonValidate"
             />
 
@@ -23,6 +25,7 @@
             android:layout_width="wrap_content"
             android:layout_height="fill_parent"
             android:text="@string/remove"
+            android:textSize="12sp"
             android:id="@+id/buttonRemove"
             />
 </LinearLayout>
