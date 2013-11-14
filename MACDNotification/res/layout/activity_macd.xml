@@ -6,9 +6,22 @@
     tools:context=".ActivityMACD"
     tools:ignore="MergeRootFrame" >
 
-    <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/textLog"
-            android:layout_gravity="left|top"/>
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/new_symbol"
+                android:id="@+id/buttonNew"
+                android:onClick="onNewSymbolClicked"/>
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/listView"/>
+    </LinearLayout>
 </ScrollView>

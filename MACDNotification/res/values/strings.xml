@@ -1,5 +1,9 @@
 <resources>
 
     <string name="app_name">MACDNotification</string>
+    <string name="log_tag">MACDNotification</string>
+    <string name="validate">Validate</string>
+    <string name="remove">Remove</string>
+    <string name="new_symbol">New Symbol</string>
 
 </resources>

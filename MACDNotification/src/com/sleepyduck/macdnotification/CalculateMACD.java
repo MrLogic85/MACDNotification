@@ -30,8 +30,12 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 public class CalculateMACD {
+    public static final int NOTIFICATION = 0x1;
+    public  static final int TOAST = 0x2;
+
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
 	private URI mUri;
 	private String mData;
@@ -59,7 +63,8 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private boolean calculateDates() {
+	private boolean buildURI(String symbol) {
+        Log.d(mContext.getString(R.string.log_tag), "CalculateMACD.buildURI");
 		final Calendar calendar = Calendar.getInstance();
 		calendar.setTimeInMillis(calendar.getTimeInMillis() - ONE_DAY);
 		final String end = String.format("%04d-%02d-%02d", calendar.get(Calendar.YEAR),
@@ -69,9 +74,12 @@ public class CalculateMACD {
 				calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
 
 		try {
-			String query = "select Close from yahoo.finance.historicaldata where startDate=\"" + start
-					+ "\" AND symbol=\"GDX\" AND endDate=\"" + end + "\"";
-			query = query.replace(" ", "%20").replace("=", "%3D").replace("\"", "%22");
+			String query = "select Close from yahoo.finance.historicaldata where startDate=\""
+                    + start	+ "\" AND symbol=\"" + symbol + "\" AND endDate=\"" + end + "\"";
+			query = query.replace(" ", "%20")
+                    .replace("=", "%3D")
+                    .replace("\"", "%22")
+                    .replace("^", "%5E");
 			query = "http://query.yahooapis.com/v1/public/yql?q=" + query;
 			query += "&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
 			mUri = new URI(query);
@@ -83,9 +91,11 @@ public class CalculateMACD {
 		}
 	}
 
-	private boolean calculateMACD() {
+	private String calculateandDisplayMACD(String symbol, int flags) {
+        Log.d(mContext.getString(R.string.log_tag), "CalculateMACD.calculateandDisplayMACD");
 		if (!validateData()) {
-			return false;
+            Log.d(mContext.getString(R.string.log_tag), "Invalid data " + mCloseData);
+			return null;
 		}
 
 		Collections.reverse(mCloseData);
@@ -96,13 +106,18 @@ public class CalculateMACD {
 			final List<Float> signalLine = calcEMA(macdLine, 9);
 			final List<Float> macdHistogram = diff(macdLine, signalLine);
 
-			if (macdHistogram.get(macdHistogram.size() - 1) * macdHistogram.get(macdHistogram.size() - 2) < 0) {
+			if ((flags & NOTIFICATION) > 0
+                    && macdHistogram.get(macdHistogram.size() - 1)
+                    * macdHistogram.get(macdHistogram.size() - 2) < 0) {
+                Log.d(mContext.getString(R.string.log_tag), "Diplaying notification");
 				final NotificationManager notificationManager = (NotificationManager) mContext
 						.getSystemService(Context.NOTIFICATION_SERVICE);
 
 				final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
 				builder.setContentTitle("MACD Notification");
-				builder.setContentText("MACD for GDX = " + macdHistogram.get(macdHistogram.size() - 1));
+                String buyOrSell = macdHistogram.get(macdHistogram.size() - 1) > 0 ? "Buy" : "Sell";
+				builder.setContentText(buyOrSell + " " + symbol + ", MACD is "
+                        + macdHistogram.get(macdHistogram.size() - 1));
 				builder.setSmallIcon(R.drawable.ic_launcher);
 
 				final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),
@@ -110,12 +125,23 @@ public class CalculateMACD {
 				builder.setFullScreenIntent(intent, true);
 				notificationManager.notify((int) (Math.random() * 100000), builder.build());
 
-				Log.d(getClass().getSimpleName(),
+				Log.d(mContext.getString(R.string.log_tag),
 						"MACD for GDX = " + macdHistogram.get(macdHistogram.size() - 1));
-			}
-			return true;
-		}
-		return false;
+			} else if ((flags & TOAST) > 0) {
+                Log.d(mContext.getString(R.string.log_tag), "Diplaying toast");
+                return symbol + " MACD is " + macdHistogram.get(macdHistogram.size() - 1)
+                        + ", based on " + mCloseData.size() + " values";
+            }
+			return null;
+		} else if (mCloseData.size() > 0) {
+            Log.d(mContext.getString(R.string.log_tag), "Not enough data " + mCloseData);
+            if ((flags & TOAST) > 0)
+                return "Not enough data for " + symbol + ", only " + mCloseData.size()
+                        + " values found";
+        } else if ((flags & TOAST) > 0) {
+            return symbol + " could not be found";
+        }
+		return null;
 	}
 
 	private List<Float> diff(final List<Float> LHS, final List<Float> RHS) {
@@ -129,6 +155,7 @@ public class CalculateMACD {
 	}
 
 	private boolean fetchData() {
+        Log.d(mContext.getString(R.string.log_tag), "CalculateMACD.fetchData");
 		if (mUri == null)
 			return false;
 
@@ -155,6 +182,7 @@ public class CalculateMACD {
 	}
 
 	private boolean parseData() {
+        Log.d(mContext.getString(R.string.log_tag), "CalculateMACD.parseData");
 		try {
 			final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
 			parser.parse(new InputSource(new StringReader(mData)), new DefaultHandler() {
@@ -188,19 +216,31 @@ public class CalculateMACD {
 
 	private boolean validateData() {
 		for (final float val : mCloseData)
-			if (val <= 0)
+			if (val < 0)
 				return false;
 		return true;
 	}
 
-	public void execute() {
-		new AsyncTask<Void, Void, Void>() {
+	public void execute(final String symbol, final int flags) {
+        Log.d(mContext.getString(R.string.log_tag), "CalculateMACD.execute(" + symbol + ", "
+                + flags + ")");
+		new AsyncTask<Void, String, Void>() {
 			@Override
 			protected Void doInBackground(final Void... params) {
-				if (calculateDates() && fetchData() && parseData())
-					calculateMACD();
+				if (buildURI(symbol) && fetchData() && parseData())
+					publishProgress(calculateandDisplayMACD(symbol, flags));
+                else if ((flags & TOAST) > 0) {
+                    publishProgress("An error has occurred for " + symbol);
+                }
 				return null;
 			}
-		}.execute();
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                super.onProgressUpdate(values);
+                if (values != null && values.length > 0 && values[0] != null)
+                    Toast.makeText(mContext, values[0], Toast.LENGTH_LONG).show();
+            }
+        }.execute();
 	}
 }
