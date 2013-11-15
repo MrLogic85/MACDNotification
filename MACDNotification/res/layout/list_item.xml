@@ -10,7 +10,8 @@
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
-            android:id="@+id/textViewSymbol"/>
+            android:id="@+id/textViewSymbol"
+            android:gravity="center_vertical"/>
 
     <ImageView
             android:layout_width="wrap_content"
