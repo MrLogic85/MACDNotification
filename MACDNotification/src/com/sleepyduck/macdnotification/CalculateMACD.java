@@ -161,11 +161,10 @@ public class CalculateMACD {
 			final HttpResponse response = client.execute(request);
 			final BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
 					.getContent()));
-			final StringBuffer sb = new StringBuffer("");
-			String l = "";
-			final String nl = System.getProperty("line.separator");
+			final StringBuilder sb = new StringBuilder("");
+			String l;
 			while ((l = in.readLine()) != null) {
-				sb.append(l + nl);
+				sb.append(l).append("\n");
 			}
 			in.close();
 			mData = sb.toString();
@@ -194,11 +193,7 @@ public class CalculateMACD {
 				@Override
 				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
 					super.startElement(uri, localName, qName, attributes);
-					if (qName.toLowerCase().equals("close")) {
-						mClose = true;
-					} else {
-						mClose = false;
-					}
+                    mClose = qName.toLowerCase().equals("close");
 				}
 			});
 		} catch (final Exception e) {

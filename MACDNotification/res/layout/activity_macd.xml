@@ -1,30 +1,57 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".ActivityMACD"
-    tools:ignore="MergeRootFrame" >
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context=".ActivityMACD"
+                tools:ignore="MergeRootFrame">
 
-    <Button
-        android:id="@+id/buttonNew"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="onNewSymbolClicked"
-        android:text="@string/new_symbol" />
+    <ImageView
+            android:id="@+id/buttonNew"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_input_add"
+            android:paddingLeft="25dp"
+            android:onClick="onNewSymbolClicked"
+            android:contentDescription="@string/content_desc"/>
 
-    <ScrollView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_below="@+id/buttonNew" >
 
-        <LinearLayout
+    <LinearLayout
+            android:id="@+id/addLayout"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/buttonNew"
+            android:visibility="gone">
+
+        <EditText
+                android:id="@+id/editTextNewSymbol"
+                android:layout_width="0dp"
+                android:layout_height="fill_parent"
+                android:layout_weight="1"
+                android:inputType="text"/>
+
+        <Spinner
+                android:id="@+id/spinnerGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent">
+        </Spinner>
+
+        <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:src="@android:drawable/ic_input_add"
+                android:paddingRight="25dp"
+                android:onClick="onAddSymbolClicked"
+                android:contentDescription="@string/content_desc"/>
+
+    </LinearLayout>
+
+    <ExpandableListView
             android:id="@+id/listView"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
-        </LinearLayout>
-
-    </ScrollView>
+            android:layout_height="fill_parent"
+            android:layout_below="@+id/addLayout">
+    </ExpandableListView>
 
 </RelativeLayout>

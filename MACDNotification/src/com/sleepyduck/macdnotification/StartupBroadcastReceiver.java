@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 public class StartupBroadcastReceiver extends BroadcastReceiver {
@@ -16,7 +17,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(final Context context, final Intent intent) {
 		final Calendar cal = Calendar.getInstance();
-		if (cal.get(Calendar.HOUR_OF_DAY) > 8)
+		if (cal.get(Calendar.HOUR_OF_DAY) > 7)
 			cal.add(Calendar.DATE, 1);
 		cal.set(Calendar.HOUR_OF_DAY, 8);
 		cal.set(Calendar.MINUTE, 0);
@@ -36,8 +37,11 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		alarmManager.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),
 				PendingIntent.getBroadcast(context, 1, intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
 
-		final Set<String> symbols = context.getSharedPreferences(context.getPackageName(),
-				Context.MODE_PRIVATE).getStringSet(ActivityMACD.KEY_SYMBOL, new HashSet<String>());
+        SharedPreferences prefs = context.getSharedPreferences(context.getPackageName(),
+                Context.MODE_PRIVATE);
+		final Set<String> symbols = prefs.getStringSet(ActivityMACD.KEY_INDEX_SYMBOLS, new HashSet<String>());
+        symbols.addAll(prefs.getStringSet(ActivityMACD.KEY_STOCK_SYMBOLS, new HashSet<String>()));
+        symbols.addAll(prefs.getStringSet(ActivityMACD.KEY_ETF_SYMBOLS, new HashSet<String>()));
 		for (final String symbol : symbols)
 			new CalculateMACD(context).execute(symbol, CalculateMACD.NOTIFICATION);
 	}
