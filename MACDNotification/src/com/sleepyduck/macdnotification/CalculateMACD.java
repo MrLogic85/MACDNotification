@@ -86,7 +86,7 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private String calculateandDisplayMACD(final String symbol, final int flags) {
+	private String calculateAndDisplayMACD(final String symbol, final int flags) {
 		if (!validateData()) {
 			Log.d(mContext.getString(R.string.log_tag), "Invalid data " + mCloseData);
 			return null;
@@ -216,7 +216,7 @@ public class CalculateMACD {
 			@Override
 			protected Void doInBackground(final Void... params) {
 				if (buildURI(symbol) && fetchData() && parseData())
-					publishProgress(calculateandDisplayMACD(symbol, flags));
+					publishProgress(calculateAndDisplayMACD(symbol, flags));
 				else if ((flags & TOAST) > 0) {
 					publishProgress("An error has occurred for " + symbol);
 				}
