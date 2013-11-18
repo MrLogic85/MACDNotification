@@ -32,6 +32,9 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.sleepyduck.xml.XMLElement;
+import com.sleepyduck.xml.XMLElementFactory;
+
 public class CalculateMACD {
 	public static final int NOTIFICATION = 0x1;
 	public static final int TOAST = 0x2;

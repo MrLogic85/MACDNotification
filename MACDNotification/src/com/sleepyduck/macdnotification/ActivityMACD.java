@@ -1,5 +1,13 @@
 package com.sleepyduck.macdnotification;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,6 +28,7 @@ public class ActivityMACD extends Activity {
 	public static final String KEY_COUNT = "count";
 	public static final String KEY_NAME = "name";
 	public static final String KEY_SEPPARATOR = ":";
+    private static final String KEY_VALUE_SEPPARATOR = "<=>";
 
 	private final List<String> mGroups = Collections.synchronizedList(new ArrayList<String>());
 	private final Map<String, List<String>> mSymbols = Collections
@@ -157,4 +166,32 @@ public class ActivityMACD extends Activity {
 		mListAdapter.notifyDataSetChanged();
 		mSpinnerAdapter.notifyDataSetChanged();
 	}
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE);
+        prefs.getAll();
+
+        File f = new File("symbols.data");
+        if (f != null && f.exists()) {
+            if (f.canWrite()) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(f));
+                    String line;
+                    for (String key : prefs.getAll().keySet()) {
+                        Object val = prefs.getAll().get(key);
+                        line = key + KEY_VALUE_SEPPARATOR + val + "\n";
+                        out.write(line);
+                    }
+                    out.flush();
+                    out.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }
