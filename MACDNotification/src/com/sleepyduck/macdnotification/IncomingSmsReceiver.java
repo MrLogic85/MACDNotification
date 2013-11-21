@@ -1,5 +1,8 @@
 package com.sleepyduck.macdnotification;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,58 +12,54 @@ import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Fredrik Metcalf
  */
 public class IncomingSmsReceiver extends BroadcastReceiver {
-    final SmsManager mSmsManager = SmsManager.getDefault();
+	final SmsManager mSmsManager = SmsManager.getDefault();
 
-    @Override
-    public void onReceive(Context context, Intent intent) {
+	private List<SmsMessage> getSmsMessage(final Intent intent) {
+		final Bundle bundle = intent.getExtras();
 
-        List<SmsMessage> smsMessages = getSmsMessage(intent);
-        for (SmsMessage smsMessage : smsMessages) {
-            String phoneNumber = smsMessage.getDisplayOriginatingAddress();
-            String message = smsMessage.getDisplayMessageBody();
-            if (validateSender(phoneNumber)) {
-                sendSms(context, message);
-            }
-        }
-    }
+		try {
+			if (bundle != null) {
+				final Object[] pdusObj = (Object[]) bundle.get("pdus");
+				final List<SmsMessage> messages = new ArrayList<SmsMessage>();
+				for (final Object element : pdusObj) {
+					messages.add(SmsMessage.createFromPdu((byte[]) element));
+				}
+				return messages;
+			} else {
+				Log.e(getClass().getSimpleName(), "No sms data received");
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+		}
 
-    private void sendSms(Context context, String message) {
-        PendingIntent pi = PendingIntent.getBroadcast(context, 0, new Intent("SMS_SENT"), 0);
-        mSmsManager.sendTextMessage("TODO", null, message, pi, null);
-    }
+		return new ArrayList<SmsMessage>();
+	}
 
-    private boolean validateSender(String phoneNumber) {
-        Log.d(getClass().getSimpleName(), "Validating phone number " + phoneNumber);
-        return PhoneNumberUtils.compare("SPNL", phoneNumber);
-    }
+	private void sendSms(final Context context, final String message) {
+		final PendingIntent pi = PendingIntent.getBroadcast(context, 0, new Intent("SMS_SENT"), 0);
+		// mSmsManager.sendTextMessage("TODO", null, message, pi, null);
+	}
 
-    private List<SmsMessage> getSmsMessage(Intent intent) {
-        final Bundle bundle = intent.getExtras();
+	private boolean validateSender(final String phoneNumber) {
+		Log.d(getClass().getSimpleName(), "Validating phone number " + phoneNumber);
+		return PhoneNumberUtils.compare("SPNL", phoneNumber);
+	}
 
-        try {
-            if (bundle != null) {
-                final Object[] pdusObj = (Object[]) bundle.get("pdus");
-                List<SmsMessage> messages = new ArrayList<SmsMessage>();
-                for (int i = 0; i < pdusObj.length; i++) {
-                    messages.add(SmsMessage.createFromPdu((byte[]) pdusObj[i]));
-                }
-                return messages;
-            } else {
-                Log.e(getClass().getSimpleName(), "No sms data received");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+	@Override
+	public void onReceive(final Context context, final Intent intent) {
 
-        return new ArrayList<SmsMessage>();
-    }
+		final List<SmsMessage> smsMessages = getSmsMessage(intent);
+		for (final SmsMessage smsMessage : smsMessages) {
+			final String phoneNumber = smsMessage.getDisplayOriginatingAddress();
+			final String message = smsMessage.getDisplayMessageBody();
+			if (validateSender(phoneNumber)) {
+				sendSms(context, message);
+			}
+		}
+	}
 }

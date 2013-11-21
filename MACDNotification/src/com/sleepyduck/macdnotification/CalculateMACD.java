@@ -32,9 +32,6 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.sleepyduck.xml.XMLElement;
-import com.sleepyduck.xml.XMLElementFactory;
-
 public class CalculateMACD {
 	public static final int NOTIFICATION = 0x1;
 	public static final int TOAST = 0x2;
@@ -196,7 +193,7 @@ public class CalculateMACD {
 				@Override
 				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
 					super.startElement(uri, localName, qName, attributes);
-                    mClose = qName.toLowerCase().equals("close");
+					mClose = qName.toLowerCase().equals("close");
 				}
 			});
 		} catch (final Exception e) {
