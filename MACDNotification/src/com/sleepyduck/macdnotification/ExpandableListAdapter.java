@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,7 +40,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
     public View getChildView(final int groupPosition, final int childPosition,
                              boolean isLastChild, View convertView, ViewGroup parent) {
-        final String laptop = (String) getChild(groupPosition, childPosition);
+        final String symbol = (String) getChild(groupPosition, childPosition);
         LayoutInflater inflater = mContext.getLayoutInflater();
 
         if (convertView == null) {
@@ -59,10 +60,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                             .setPositiveButton(android.R.string.yes,
                                     new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int id) {
-                                            List<String> child =
-                                                    mSymbols.get(mGroups.get(groupPosition));
-                                            child.remove(childPosition);
-                                            notifyDataSetChanged();
+                                            removeChild(groupPosition, childPosition);
                                         }
                                     })
                             .setNegativeButton(android.R.string.no,
@@ -76,10 +74,21 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 }
             });
 
-            item.setText(laptop);
+            item.setText(symbol);
             return convertView;
         }
         return null;
+    }
+
+    private void removeChild(int groupPosition, int childPosition) {
+        String group = mGroups.get(groupPosition);
+        List<String> children = mSymbols.get(group);
+        String symbol = children.remove(childPosition);
+        notifyDataSetChanged();
+        Intent intent = new Intent(ActivityMACD.ACTION_BROADCAST_REMOVE);
+        intent.putExtra(ActivityMACD.KEY_GROUP, group);
+        intent.putExtra(ActivityMACD.KEY_NAME, symbol);
+        mContext.sendBroadcast(intent);
     }
 
     public int getChildrenCount(int groupPosition) {
