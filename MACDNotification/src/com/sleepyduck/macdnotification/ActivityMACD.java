@@ -169,7 +169,7 @@ public class ActivityMACD extends Activity {
 			}
 			mAddLayout.setVisibility(View.VISIBLE);
 		} else {
-			mNameEditText.setVisibility(View.GONE);
+			mAddLayout.setVisibility(View.GONE);
 		}
 	}
 
