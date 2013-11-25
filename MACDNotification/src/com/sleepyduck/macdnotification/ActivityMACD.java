@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import android.widget.ExpandableListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
+
 public class ActivityMACD extends Activity {
 	public static final String KEY_GROUP = "group";
 	public static final String KEY_COUNT = "count";
@@ -35,13 +38,40 @@ public class ActivityMACD extends Activity {
 	private static final String KEY_VALUE_SEPPARATOR = "<=>";
 
 	private final List<String> mGroups = Collections.synchronizedList(new ArrayList<String>());
-	private final Map<String, List<String>> mSymbols = Collections
-			.synchronizedMap(new LinkedHashMap<String, List<String>>());
+	private final Map<String, List<String[]>> mSymbols = Collections
+			.synchronizedMap(new LinkedHashMap<String, List<String[]>>());
 	private ExpandableListAdapter mListAdapter;
 	private Spinner mGroupSpinner;
 	private ArrayAdapter<String> mSpinnerAdapter;
 	private View mAddLayout;
 	private EditText mNameEditText;
+
+	private MACDListener mMACDListener = new MACDListener() {
+
+		@Override
+		public void onMessage(String message) {
+			Toast.makeText(ActivityMACD.this, message, Toast.LENGTH_LONG).show();
+		}
+
+		@Override
+		public void onCalculationComplete(Bundle data) {
+			if (data.containsKey(CalculateMACD.DATA_MACD_LATEST)) {
+				String group = data.getString(CalculateMACD.DATA_GROUP);
+				String symbol = data.getString(CalculateMACD.DATA_SYMBOL);
+				String dataString = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+						data.getFloat(CalculateMACD.DATA_VALUE_LATEST),
+						data.getFloat(CalculateMACD.DATA_VALUE_PREVIOUS),
+						data.getFloat(CalculateMACD.DATA_MACD_LATEST),
+						data.getFloat(CalculateMACD.DATA_MACD_PREVIOUS));
+				for (String[] values : mSymbols.get(group)) {
+					if (values.length > 1 && values[0].equals(symbol)) {
+						values[1] = dataString;
+					}
+				}
+				mListAdapter.notifyDataSetChanged();
+			}
+		}
+	};
 
 	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		@Override
@@ -58,15 +88,6 @@ public class ActivityMACD extends Activity {
 				}
 				mGroupSpinner.setSelection(mGroups.indexOf(group));
 			}
-		}
-	};
-
-	private ExpandableListView.OnChildClickListener mChildClickListener = new ExpandableListView.OnChildClickListener() {
-		@Override
-		public boolean onChildClick(final ExpandableListView parent, final View v, final int groupPosition, final int childPosition, final long id) {
-			final String symbol = (String) mListAdapter.getChild(groupPosition, childPosition);
-			new CalculateMACD(getApplicationContext()).execute(symbol, CalculateMACD.TOAST);
-			return true;
 		}
 	};
 
@@ -87,8 +108,6 @@ public class ActivityMACD extends Activity {
 		mListAdapter = new ExpandableListAdapter(this, mGroups, mSymbols);
 		mListView.setAdapter(mListAdapter);
 
-		mListView.setOnChildClickListener(mChildClickListener);
-
 		load();
 	}
 
@@ -103,7 +122,6 @@ public class ActivityMACD extends Activity {
 			while ((line = reader.readLine()) != null) {
 				String[] keyVal = line.split(KEY_VALUE_SEPPARATOR);
 				if (keyVal.length > 1) {
-					Toast.makeText(this, "KeyVal: " + keyVal[0] + " = " + keyVal[1], Toast.LENGTH_SHORT).show();
 					if (keyVal[0].contains(KEY_COUNT)) {
 						try {
 							prefs.putInt(keyVal[0], Integer.parseInt(keyVal[1]));
@@ -131,16 +149,21 @@ public class ActivityMACD extends Activity {
 		if (mGroupSpinner.getVisibility() == View.VISIBLE) {
 			final String group = (String) mGroupSpinner.getSelectedItem();
 			if (group != null) {
-				final List<String> symbols = mSymbols.get(group);
+				final List<String[]> symbols = mSymbols.get(group);
 				if (mNameEditText != null && mNameEditText.getText() != null
-						&& !mNameEditText.getText().toString().equals(""))
-					symbols.add(mNameEditText.getText().toString());
+						&& !mNameEditText.getText().toString().equals("")) {
+					String[] data = new String[2];
+					data[0] = mNameEditText.getText().toString();
+					symbols.add(data);
+
+					new CalculateMACD(this, mMACDListener, group).execute(data[0]);
+				}
 			}
 		} else {
 			if (mNameEditText != null && mNameEditText.getText() != null
 					&& !mNameEditText.getText().toString().equals("")) {
 				mGroups.add(mNameEditText.getText().toString());
-				mSymbols.put(mNameEditText.getText().toString(), new ArrayList<String>());
+				mSymbols.put(mNameEditText.getText().toString(), new ArrayList<String[]>());
 			}
 		}
 		mListAdapter.notifyDataSetChanged();
@@ -180,18 +203,25 @@ public class ActivityMACD extends Activity {
 		editor.clear();
 		String groupName;
 		editor.putInt(KEY_COUNT, mGroups.size());
-		List<String> symbols;
+		List<String[]> symbols;
 		for (int i = 0; i < mGroups.size(); i++) {
 			groupName = mGroups.get(i);
 			if (groupName.length() > 0) {
 				editor.putString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_NAME, groupName);
 				symbols = mSymbols.get(groupName);
 				editor.putInt(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_COUNT, symbols.size());
-				Collections.sort(symbols);
+				Collections.sort(symbols, new Comparator<String[]>() {
+					@Override
+					public int compare(String[] lhs, String[] rhs) {
+						if (lhs.length > 0 && rhs.length > 0)
+							return lhs[0].compareTo(rhs[0]);
+						else
+							return lhs.length - rhs.length;
+					}});
 				for (int j = 0; j < symbols.size(); j++) {
-					if (symbols.get(j).length() > 0) {
+					if (symbols.get(j).length > 0 && symbols.get(j)[0].length() > 0) {
 						editor.putString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_SEPPARATOR + KEY_NAME,
-								symbols.get(j));
+								symbols.get(j)[0]);
 					}
 				}
 			}
@@ -209,19 +239,24 @@ public class ActivityMACD extends Activity {
 		final SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE);
 		int symbolCount;
 		String groupName;
-		List<String> symbols;
+		List<String[]> symbols;
 		final int groupCount = prefs.getInt(KEY_COUNT, 0);
 		for (int i = 0; i < groupCount; i++) {
 			groupName = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_NAME, "Group");
 			mGroups.add(groupName);
-			symbols = new ArrayList<String>();
+			symbols = new ArrayList<String[]>();
 			mSymbols.put(groupName, symbols);
 			symbolCount = prefs.getInt(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_COUNT, 0);
 			for (int j = 0; j < symbolCount; j++) {
+				String[] data = new String[2];
 				String name = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_NAME, "-SYM-");
-				if (name.equals("-SYM-"))
+				if (name.equals("-SYM-")) {
 					name = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_SEPPARATOR + KEY_NAME, "-SYM-");
-				symbols.add(name);
+				}
+				data[0] = name;
+				symbols.add(data);
+
+				new CalculateMACD(this, mMACDListener, groupName).execute(data[0]);
 			}
 		}
 		mListAdapter.notifyDataSetChanged();
