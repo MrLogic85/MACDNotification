@@ -117,6 +117,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	private void displayNotification(Bundle data) {
+		if (!data.containsKey(CalculateMACD.DATA_MACD_LATEST)
+				|| !data.containsKey(CalculateMACD.DATA_MACD_PREVIOUS))
+			return;
+
 		float macd = data.getFloat(CalculateMACD.DATA_MACD_LATEST);
 		float macdPrev = data.getFloat(CalculateMACD.DATA_MACD_PREVIOUS);
 		String symbol = data.getString(CalculateMACD.DATA_SYMBOL);
@@ -127,7 +131,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		builder.setContentTitle("MACD Notification");
 
 		String buyOrSell = "";
-		if (macd > 0)
+		if (macd >= 0)
 			if (macd * macdPrev > 0)
 				buyOrSell = "Keep";
 			else
@@ -139,7 +143,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 
 		// Calculate the value of MACD after three days with the same trend
 		if (buyOrSell.equals("Don't buy")) {
-			float trend = macdPrev - macd;
+			float trend = macd - macdPrev;
 			float days = (-macd) / trend;
 			if (days > 0 && days < 5)
 				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";

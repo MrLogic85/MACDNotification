@@ -122,24 +122,22 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	}
 
 	@Override
-	public View getGroupView(int groupPosition, boolean isExpanded,
-			View convertView, ViewGroup parent) {
-		String laptopName = (String) getGroup(groupPosition);
-		if (convertView == null) {
-			LayoutInflater inflater = (LayoutInflater) mContext
-					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			convertView = inflater.inflate(R.layout.list_group_item,
-					null);
-		}
+	public View getGroupView(final int groupPosition, boolean isExpanded,
+			View groupView, ViewGroup parent) {
+		String groupName = (String) getGroup(groupPosition);
+
+		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		groupView = groupView != null ? groupView : inflater.inflate(R.layout.list_group_item, null);
+
 		TextView item;
-		if (convertView != null) {
-			item = (TextView) convertView.findViewById(R.id.textViewGroupName);
+		if (groupView != null) {
+			item = (TextView) groupView.findViewById(R.id.textViewGroupName);
 			if (item != null) {
 				item.setTypeface(null, Typeface.BOLD);
-				item.setText(laptopName);
+				item.setText(groupName);
 			}
 		}
-		return convertView;
+		return groupView;
 	}
 
 	@Override
