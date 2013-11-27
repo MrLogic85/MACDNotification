@@ -41,7 +41,13 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	BroadcastReceiver mInternetReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			calculateMACDs(context);
+			if (!checkInternetConnection()) {
+				mContext.registerReceiver(mInternetReceiver, new IntentFilter(
+						"android.net.conn.CONNECTIVITY_CHANGE"));
+			} else {
+				calculateMACDs(context);
+				mContext.unregisterReceiver(mInternetReceiver);
+			}
 		}
 	};
 
@@ -52,7 +58,8 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		setNewAlarm();
 
 		if (!checkInternetConnection()) {
-			mContext.registerReceiver(mInternetReceiver, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+			mContext.registerReceiver(mInternetReceiver, new IntentFilter(
+					"android.net.conn.CONNECTIVITY_CHANGE"));
 		} else {
 			calculateMACDs(context);
 		}
@@ -70,7 +77,8 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 					+ ActivityMACD.KEY_SEPPARATOR + ActivityMACD.KEY_COUNT, 0);
 			for (int j = 0; j < symbolCount; j++) {
 				symbols.add(prefs.getString(ActivityMACD.KEY_GROUP + ActivityMACD.KEY_SEPPARATOR + i
-						+ ActivityMACD.KEY_SEPPARATOR + j + ActivityMACD.KEY_SEPPARATOR + ActivityMACD.KEY_NAME, "-SYM-"));
+						+ ActivityMACD.KEY_SEPPARATOR + j + ActivityMACD.KEY_SEPPARATOR
+						+ ActivityMACD.KEY_NAME, "-SYM-"));
 			}
 		}
 
@@ -79,7 +87,8 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	private boolean checkInternetConnection() {
-		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager cm = (ConnectivityManager) mContext
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
 		return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
 	}
@@ -97,10 +106,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 			cal.add(Calendar.DATE, 2);
 
 		Log.d(mContext.getString(R.string.log_tag),
-				"Alarm set to "
-						+ String.format("%04d-%02d-%02d %02d:%02d", cal.get(Calendar.YEAR),
-								cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
-								cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)));
+				"Alarm set to " + String.format("%04d-%02d-%02d %02d:%02d", cal.get(Calendar.YEAR),
+						cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+						cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)));
+
 		final Intent intentAlarm = new Intent(mContext, StartupBroadcastReceiver.class);
 		final AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
 		alarmManager.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),
@@ -119,11 +128,22 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 
 		String buyOrSell = "";
 		if (macd > 0)
-			if (macd * macdPrev > 0) buyOrSell = "Keep";
-			else buyOrSell = "Buy";
+			if (macd * macdPrev > 0)
+				buyOrSell = "Keep";
+			else
+				buyOrSell = "Buy";
+		else if (macd * macdPrev > 0)
+			buyOrSell = "Don't buy";
 		else
-			if (macd * macdPrev > 0) buyOrSell = "Don't buy";
-			else buyOrSell = "Sell";
+			buyOrSell = "Sell";
+
+		// Calculate the value of MACD after three days with the same trend
+		if (buyOrSell.equals("Don't buy")) {
+			float trend = macdPrev - macd;
+			float days = (-macd) / trend;
+			if (days > 0 && days < 5)
+				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";
+		}
 
 		builder.setContentText(buyOrSell + " " + symbol);
 		builder.setSmallIcon(R.drawable.ic_launcher);

@@ -24,11 +24,11 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 
-public class CalculateMACD extends AsyncTask<String, String, Bundle> {
+public class CalculateMACD {
 	public static final String DATA_SYMBOL = "symbol";
 	public static final String DATA_GROUP = "group";
 	public static final String DATA_MACD_LATEST = "latest_macd";
@@ -44,15 +44,17 @@ public class CalculateMACD extends AsyncTask<String, String, Bundle> {
 
 	private MACDListener mListener = null;
 	private Bundle data = new Bundle();
+	private Handler mHandler;
 
 	public CalculateMACD(final Context context, MACDListener listener) {
 		mContext = context;
 		mListener = listener;
+
+		mHandler = new Handler();
 	}
 
 	public CalculateMACD(final Context context, MACDListener listener, String group) {
-		mContext = context;
-		mListener = listener;
+		this(context, listener);
 		data.putString(DATA_GROUP, group);
 	}
 
@@ -198,34 +200,42 @@ public class CalculateMACD extends AsyncTask<String, String, Bundle> {
 		return true;
 	}
 
-	@Override
-	protected Bundle doInBackground(final String... params) {
-		if (params.length > 0) {
-			String symbol = params[0];
-			data.putString(DATA_SYMBOL, symbol);
-			Log.d(mContext.getString(R.string.log_tag), "Calculate MACD for " + symbol);
-			if (buildURI(symbol) && fetchData() && parseData())
-				calculateMACD(symbol);
-			else
-				publishProgress("An error has occurred for " + symbol);
-		}
-		return data;
+	private void publishProgress(final String string) {
+		mHandler.post(new Runnable() {
+			@Override
+			public void run() {
+				if (mListener != null && string != null)
+					mListener.onMessage(string);
+			}
+		});
 	}
 
-	@Override
-	protected void onProgressUpdate(final String... values) {
-		super.onProgressUpdate(values);
-		if (mListener != null
-				&& values != null
-				&& values.length > 0
-				&& values[0] != null)
-			mListener.onMessage(values[0]);
+	protected void publishResult(final Bundle data) {
+		mHandler.post(new Runnable() {
+			@Override
+			public void run() {
+				mListener.onCalculationComplete(data);
+			}
+		});
 	}
 
-	@Override
-	protected void onPostExecute(Bundle data) {
-		super.onPostExecute(data);
-		mListener.onCalculationComplete(data);
+	protected void execute(final String... params) {
+		Thread thread = new Thread() {
+			@Override
+			public void run() {
+				if (params.length > 0) {
+					String symbol = params[0];
+					data.putString(DATA_SYMBOL, symbol);
+					Log.d(mContext.getString(R.string.log_tag), "Calculate MACD for " + symbol);
+					if (buildURI(symbol) && fetchData() && parseData())
+						calculateMACD(symbol);
+					else
+						publishProgress("An error has occurred for " + symbol);
+				}
+				publishResult(data);
+			}
+		};
+		thread.start();
 	}
 
 	public interface MACDListener {
