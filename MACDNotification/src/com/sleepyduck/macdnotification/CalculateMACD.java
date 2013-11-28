@@ -214,7 +214,8 @@ public class CalculateMACD {
 		mHandler.post(new Runnable() {
 			@Override
 			public void run() {
-				mListener.onCalculationComplete(data);
+				if (mListener != null)
+					mListener.onCalculationComplete(data);
 			}
 		});
 	}
