@@ -150,6 +150,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";
 		}
 
+		if (buyOrSell.equals("Keep") || buyOrSell.equals("Don't buy")) {
+			return;
+		}
+
 		builder.setContentText(buyOrSell + " " + symbol);
 		builder.setSmallIcon(R.drawable.ic_launcher);
 		final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),

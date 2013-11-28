@@ -8,6 +8,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -81,10 +82,28 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				}
 			});
 
-			if (symbol.length > 0)
+			if (symbol.length > 0 && symbol[0] != null)
 				symbolText.setText(symbol[0]);
-			if (symbol.length > 1)
+			if (symbol.length > 1 && symbol[1] != null) {
 				dataText.setText(symbol[1]);
+				if (symbol[1].contains("Price")) {
+					String[] splitString = symbol[1].split(" ");
+					if (splitString.length > 4) {
+						String macd = splitString[4].replace(",", ".");
+						try {
+							float fMacd = Float.valueOf(macd);
+							if (fMacd >= 0) {
+								symbolText.setTextColor(Color.GREEN);
+							} else {
+								symbolText.setTextColor(Color.RED);
+							}
+						} catch (NumberFormatException e) {
+							// Could probably not parse the minus sign
+							symbolText.setTextColor(Color.RED);
+						}
+					}
+				}
+			}
 			return convertView;
 		}
 		return null;
