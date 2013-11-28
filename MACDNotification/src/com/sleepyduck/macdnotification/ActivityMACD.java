@@ -1,7 +1,10 @@
 package com.sleepyduck.macdnotification;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -21,6 +24,8 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -31,6 +36,8 @@ import android.widget.Toast;
 import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 
 public class ActivityMACD extends Activity {
+	private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
+
 	public static final String KEY_GROUP = "group";
 	public static final String KEY_COUNT = "count";
 	public static final String KEY_NAME = "name";
@@ -92,23 +99,23 @@ public class ActivityMACD extends Activity {
 		}
 	};
 
-    private ExpandableListView.OnChildClickListener mChildClickListener
-            = new ExpandableListView.OnChildClickListener() {
-        @Override
-        public boolean onChildClick(ExpandableListView expandableListView, View view, int group, int child, long id) {
-            String symbol = mSymbols.get(mGroups.get(group)).get(child)[0];
-            if (symbol != null && symbol.length() > 0) {
-                Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(uri);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            }
-            return true;
-        }
-    };
+	private ExpandableListView.OnChildClickListener mChildClickListener
+	= new ExpandableListView.OnChildClickListener() {
+		@Override
+		public boolean onChildClick(ExpandableListView expandableListView, View view, int group, int child, long id) {
+			String symbol = mSymbols.get(mGroups.get(group)).get(child)[0];
+			if (symbol != null && symbol.length() > 0) {
+				Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(uri);
+				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				startActivity(intent);
+			}
+			return true;
+		}
+	};
 
-    @Override
+	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_macd);
@@ -124,7 +131,7 @@ public class ActivityMACD extends Activity {
 
 		mListAdapter = new ExpandableListAdapter(this, mGroups, mSymbols);
 		mListView.setAdapter(mListAdapter);
-        mListView.setOnChildClickListener(mChildClickListener);
+		mListView.setOnChildClickListener(mChildClickListener);
 
 		load();
 	}
@@ -133,8 +140,21 @@ public class ActivityMACD extends Activity {
 		Editor prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE).edit();
 		prefs.clear();
 		try {
-			InputStreamReader in = new InputStreamReader(openFileInput("symbols.data"));
-			BufferedReader reader = new BufferedReader(in);
+			FileInputStream in = null;
+			if (isExternalStorageReadable()) {
+				try {
+					File file = getExternalStorageFile();
+					if (file != null && file.exists()) {
+						in = new FileInputStream(file);
+					}
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "", e);
+				}
+			}
+			if (in == null) {
+				in = openFileInput("symbols.data");
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -144,7 +164,7 @@ public class ActivityMACD extends Activity {
 						try {
 							prefs.putInt(keyVal[0], Integer.parseInt(keyVal[1]));
 						} catch (NumberFormatException e) {
-							e.printStackTrace();
+							Log.e(LOG_TAG, "", e);
 						}
 					} else {
 						prefs.putString(keyVal[0], keyVal[1]);
@@ -156,9 +176,9 @@ public class ActivityMACD extends Activity {
 			prefs.commit();
 			in.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 		}
 	}
 
@@ -180,8 +200,13 @@ public class ActivityMACD extends Activity {
 		} else {
 			if (mNameEditText != null && mNameEditText.getText() != null
 					&& !mNameEditText.getText().toString().equals("")) {
-				mGroups.add(mNameEditText.getText().toString());
-				mSymbols.put(mNameEditText.getText().toString(), new ArrayList<String[]>());
+				if (mGroups.contains(mNameEditText.getText().toString())) {
+					Toast.makeText(this, "That group alreay exists", Toast.LENGTH_LONG).show();
+					mAddLayout.setVisibility(View.VISIBLE);
+				} else {
+					mGroups.add(mNameEditText.getText().toString());
+					mSymbols.put(mNameEditText.getText().toString(), new ArrayList<String[]>());
+				}
 			}
 		}
 		mListAdapter.notifyDataSetChanged();
@@ -288,7 +313,20 @@ public class ActivityMACD extends Activity {
 		super.onStop();
 		SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE);
 		try {
-			OutputStreamWriter out = new OutputStreamWriter(openFileOutput("symbols.data", Context.MODE_PRIVATE));
+			OutputStreamWriter out = null;
+			if (isExternalStorageWritable()) {
+				try {
+					File file = getExternalStorageFile();
+					if (file != null) {
+						out = new OutputStreamWriter(new FileOutputStream(file));
+					}
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "", e);
+				}
+			}
+			if (out == null) {
+				out = new OutputStreamWriter(openFileOutput("symbols.data", Context.MODE_PRIVATE));
+			}
 			String line;
 			for (String key : prefs.getAll().keySet()) {
 				Object val = prefs.getAll().get(key);
@@ -298,9 +336,36 @@ public class ActivityMACD extends Activity {
 			out.flush();
 			out.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 		}
+	}
+
+	public File getExternalStorageFile() throws IOException {
+		File dir = getExternalFilesDir("data");
+		if (!dir.exists() && !dir.mkdirs()) {
+			Log.e(LOG_TAG, "Failed to create directory");
+		}
+		return new File(dir, "symbols.data");
+	}
+
+	/* Checks if external storage is available for read and write */
+	public boolean isExternalStorageWritable() {
+		String state = Environment.getExternalStorageState();
+		if (Environment.MEDIA_MOUNTED.equals(state)) {
+			return true;
+		}
+		return false;
+	}
+
+	/* Checks if external storage is available to at least read */
+	public boolean isExternalStorageReadable() {
+		String state = Environment.getExternalStorageState();
+		if (Environment.MEDIA_MOUNTED.equals(state) ||
+				Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+			return true;
+		}
+		return false;
 	}
 }

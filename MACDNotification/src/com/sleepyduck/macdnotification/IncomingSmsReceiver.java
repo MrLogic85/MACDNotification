@@ -17,6 +17,8 @@ import android.util.Log;
  * @author Fredrik Metcalf
  */
 public class IncomingSmsReceiver extends BroadcastReceiver {
+	private static final String LOG_TAG = IncomingSmsReceiver.class.getSimpleName();
+
 	final SmsManager mSmsManager = SmsManager.getDefault();
 
 	private List<SmsMessage> getSmsMessage(final Intent intent) {
@@ -34,7 +36,7 @@ public class IncomingSmsReceiver extends BroadcastReceiver {
 				Log.e(getClass().getSimpleName(), "No sms data received");
 			}
 		} catch (final Exception e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 		}
 
 		return new ArrayList<SmsMessage>();

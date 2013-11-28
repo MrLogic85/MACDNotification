@@ -97,7 +97,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		notifyDataSetChanged();
 		Intent intent = new Intent(ActivityMACD.ACTION_BROADCAST_REMOVE);
 		intent.putExtra(ActivityMACD.KEY_GROUP, group);
-		intent.putExtra(ActivityMACD.KEY_NAME, symbol);
+		intent.putExtra(ActivityMACD.KEY_NAME, symbol[0]);
 		mContext.sendBroadcast(intent);
 	}
 

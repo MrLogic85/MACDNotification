@@ -29,6 +29,8 @@ import android.os.Handler;
 import android.util.Log;
 
 public class CalculateMACD {
+	private static final String LOG_TAG = CalculateMACD.class.getSimpleName();
+
 	public static final String DATA_SYMBOL = "symbol";
 	public static final String DATA_GROUP = "group";
 	public static final String DATA_MACD_LATEST = "latest_macd";
@@ -75,7 +77,7 @@ public class CalculateMACD {
 			mUri = new URI(query);
 			return true;
 		} catch (final URISyntaxException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 			mUri = null;
 			return false;
 		}
@@ -100,7 +102,7 @@ public class CalculateMACD {
 
 	private void calculateMACD(final String symbol) {
 		if (!validateData()) {
-			Log.d(mContext.getString(R.string.log_tag), "Invalid data " + mCloseData);
+			Log.d(LOG_TAG, "Invalid data " + mCloseData);
 			return;
 		}
 
@@ -110,7 +112,7 @@ public class CalculateMACD {
 			final List<Float> ema26 = calcEMA(mCloseData, 26);
 			final List<Float> macdLine = diff(ema12, ema26);
 
-			Log.d(mContext.getString(R.string.log_tag), symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
+			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
 					+ ", based on " + mCloseData.size() + " values");
 
 			data.putFloat(DATA_MACD_LATEST, macdLine.get(macdLine.size() - 1));
@@ -119,11 +121,11 @@ public class CalculateMACD {
 			data.putFloat(DATA_VALUE_PREVIOUS, mCloseData.get(mCloseData.size() - 2));
 		} else if (mCloseData.size() > 0) {
 			String message = "Not enough data for " + symbol + ", only " + mCloseData.size() + " values found";
-			Log.d(mContext.getString(R.string.log_tag), message);
+			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		} else {
 			String message = symbol + " could not be found";
-			Log.d(mContext.getString(R.string.log_tag), message);
+			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		}
 	}
@@ -159,7 +161,7 @@ public class CalculateMACD {
 			mData = sb.toString();
 			return true;
 		} catch (final IOException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 			return false;
 		}
 	}
@@ -186,7 +188,7 @@ public class CalculateMACD {
 				}
 			});
 		} catch (final Exception e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 			publishProgress("Failed to parse data from Yahoo: " + e.getMessage());
 			return false;
 		}
@@ -227,7 +229,7 @@ public class CalculateMACD {
 				if (params.length > 0) {
 					String symbol = params[0];
 					data.putString(DATA_SYMBOL, symbol);
-					Log.d(mContext.getString(R.string.log_tag), "Calculate MACD for " + symbol);
+					Log.d(LOG_TAG, "Calculate MACD for " + symbol);
 					if (buildURI(symbol) && fetchData() && parseData())
 						calculateMACD(symbol);
 					else

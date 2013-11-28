@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 
 public class StartupBroadcastReceiver extends BroadcastReceiver {
+	private static final String LOG_TAG = StartupBroadcastReceiver.class.getSimpleName();
 	private Context mContext;
 	private int mIdCounter = 0;
 
@@ -105,7 +106,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)
 			cal.add(Calendar.DATE, 2);
 
-		Log.d(mContext.getString(R.string.log_tag),
+		Log.d(LOG_TAG,
 				"Alarm set to " + String.format("%04d-%02d-%02d %02d:%02d", cal.get(Calendar.YEAR),
 						cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
 						cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)));
