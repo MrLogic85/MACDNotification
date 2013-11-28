@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -91,7 +92,23 @@ public class ActivityMACD extends Activity {
 		}
 	};
 
-	@Override
+    private ExpandableListView.OnChildClickListener mChildClickListener
+            = new ExpandableListView.OnChildClickListener() {
+        @Override
+        public boolean onChildClick(ExpandableListView expandableListView, View view, int group, int child, long id) {
+            String symbol = mSymbols.get(mGroups.get(group)).get(child)[0];
+            if (symbol != null && symbol.length() > 0) {
+                Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(uri);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+            return true;
+        }
+    };
+
+    @Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_macd);
@@ -107,6 +124,7 @@ public class ActivityMACD extends Activity {
 
 		mListAdapter = new ExpandableListAdapter(this, mGroups, mSymbols);
 		mListView.setAdapter(mListAdapter);
+        mListView.setOnChildClickListener(mChildClickListener);
 
 		load();
 	}
