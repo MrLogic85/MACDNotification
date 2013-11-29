@@ -15,6 +15,7 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -39,19 +40,6 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		}
 	};
 
-	BroadcastReceiver mInternetReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			if (!checkInternetConnection()) {
-				mContext.registerReceiver(mInternetReceiver, new IntentFilter(
-						"android.net.conn.CONNECTIVITY_CHANGE"));
-			} else {
-				calculateMACDs(context);
-				mContext.unregisterReceiver(mInternetReceiver);
-			}
-		}
-	};
-
 	@Override
 	public void onReceive(final Context context, final Intent intent) {
 		mContext = context;
@@ -59,8 +47,29 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		setNewAlarm();
 
 		if (!checkInternetConnection()) {
-			mContext.registerReceiver(mInternetReceiver, new IntentFilter(
-					"android.net.conn.CONNECTIVITY_CHANGE"));
+            final Handler handler = new Handler();
+            final long startTime = System.currentTimeMillis();
+            new Thread() {
+                public void run() {
+                    boolean running = true;
+                    while (running && startTime + 3 * 60 * 60 * 1000 > System.currentTimeMillis()) {
+                        try {
+                            Thread.sleep(60*1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        if (checkInternetConnection()) {
+                            running = false;
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    calculateMACDs(context);
+                                }
+                            });
+                        }
+                    }
+                }
+            }.start();
 		} else {
 			calculateMACDs(context);
 		}
