@@ -1,8 +1,6 @@
 package com.sleepyduck.macdnotification;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 
 import android.app.AlarmManager;
 import android.app.NotificationManager;
@@ -10,8 +8,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -47,53 +43,43 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		setNewAlarm();
 
 		if (!checkInternetConnection()) {
-            final Handler handler = new Handler();
-            final long startTime = System.currentTimeMillis();
-            new Thread() {
-                public void run() {
-                    boolean running = true;
-                    while (running && startTime + 3 * 60 * 60 * 1000 > System.currentTimeMillis()) {
-                        try {
-                            Thread.sleep(60*1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        if (checkInternetConnection()) {
-                            running = false;
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    calculateMACDs(context);
-                                }
-                            });
-                        }
-                    }
-                }
-            }.start();
+			final Handler handler = new Handler();
+			final long startTime = System.currentTimeMillis();
+			new Thread() {
+				@Override
+				public void run() {
+					boolean running = true;
+					while (running && startTime + 3 * 60 * 60 * 1000 > System.currentTimeMillis()) {
+						try {
+							Thread.sleep(60*1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						if (checkInternetConnection()) {
+							running = false;
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									calculateMACDs(context);
+								}
+							});
+						}
+					}
+				}
+			}.start();
 		} else {
 			calculateMACDs(context);
 		}
 	}
 
 	private void calculateMACDs(Context context) {
-		final SharedPreferences prefs = context.getSharedPreferences(context.getPackageName(),
-				Context.MODE_PRIVATE);
-
-		int symbolCount;
-		final List<String> symbols = new ArrayList<String>();
-		final int groupCount = prefs.getInt(ActivityMACD.KEY_COUNT, 0);
-		for (int i = 0; i < groupCount; i++) {
-			symbolCount = prefs.getInt(ActivityMACD.KEY_GROUP + ActivityMACD.KEY_SEPPARATOR + i
-					+ ActivityMACD.KEY_SEPPARATOR + ActivityMACD.KEY_COUNT, 0);
-			for (int j = 0; j < symbolCount; j++) {
-				symbols.add(prefs.getString(ActivityMACD.KEY_GROUP + ActivityMACD.KEY_SEPPARATOR + i
-						+ ActivityMACD.KEY_SEPPARATOR + j + ActivityMACD.KEY_SEPPARATOR
-						+ ActivityMACD.KEY_NAME, "-SYM-"));
+		DataController dataController = new DataController();
+		dataController.load(context);
+		for (String group : dataController.getGroups()) {
+			for (String[] symbolData : dataController.getSymbols(group)) {
+				new CalculateMACD(context, listener).execute(symbolData[0]);
 			}
 		}
-
-		for (final String symbol : symbols)
-			new CalculateMACD(context, listener).execute(symbol);
 	}
 
 	private boolean checkInternetConnection() {
@@ -155,7 +141,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		if (buyOrSell.equals("Don't buy")) {
 			float trend = macd - macdPrev;
 			float days = (-macd) / trend;
-			if (days > 0 && days < 5)
+			if (days > 0 && days < 4)
 				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";
 		}
 

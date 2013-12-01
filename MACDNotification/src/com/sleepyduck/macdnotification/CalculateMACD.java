@@ -42,16 +42,12 @@ public class CalculateMACD {
 	private URI mUri;
 	private String mData;
 	ArrayList<Float> mCloseData = new ArrayList<Float>();
-	private final Context mContext;
-
 	private MACDListener mListener = null;
 	private Bundle data = new Bundle();
 	private Handler mHandler;
 
 	public CalculateMACD(final Context context, MACDListener listener) {
-		mContext = context;
 		mListener = listener;
-
 		mHandler = new Handler();
 	}
 
