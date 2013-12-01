@@ -121,10 +121,11 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		intent.putExtra(DataController.KEY_NAME, symbol[0]);
 		mContext.sendBroadcast(intent);
 	}
-	
+
 	private void removeGroup(int location) {
 		if(0 <= location && location < mGroups.size()) {
-			mGroups.remove(location);
+			String group = mGroups.remove(location);
+			mSymbols.remove(group);
 			notifyDataSetChanged();
 		}
 	}
@@ -165,10 +166,10 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				item.setText(groupName);
 			}
 		}
-		
+
 		ImageView deleteGroup = (ImageView) groupView.findViewById(R.id.imageViewDeleteGroup);
 		deleteGroup.setOnClickListener(new OnClickListener() {
-			
+
 			@Override
 			public void onClick(View v) {
 				new AlertDialog.Builder(mContext)
