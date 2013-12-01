@@ -11,5 +11,13 @@
             android:layout_height="wrap_content"
             android:paddingLeft="25dp"
             android:id="@+id/textViewGroupName"/>
+    
+    <ImageView
+        android:id="@+id/imageViewDeleteGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/content_desc_delete_group"
+        android:src="@android:drawable/ic_delete"
+        android:layout_gravity="center" />
 
 </LinearLayout>

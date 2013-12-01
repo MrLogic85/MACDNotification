@@ -10,8 +10,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ImageView;
@@ -119,6 +121,13 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		intent.putExtra(ActivityMACD.KEY_NAME, symbol[0]);
 		mContext.sendBroadcast(intent);
 	}
+	
+	private void removeGroup(int location) {
+		if(0 <= location && location < mGroups.size()) {
+			mGroups.remove(location);
+			notifyDataSetChanged();
+		}
+	}
 
 	@Override
 	public int getChildrenCount(int groupPosition) {
@@ -156,6 +165,33 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				item.setText(groupName);
 			}
 		}
+		
+		ImageView deleteGroup = (ImageView) groupView.findViewById(R.id.imageViewDeleteGroup);
+		deleteGroup.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				new AlertDialog.Builder(mContext)
+				.setMessage(R.string.ask_delete_group)
+				.setCancelable(false)
+				.setPositiveButton(android.R.string.yes,
+						new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						removeGroup(groupPosition);
+					}
+				})
+				.setNegativeButton(android.R.string.no,
+						new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						dialog.cancel();
+					}
+				})
+				.create()
+				.show();
+			}
+		});
 		return groupView;
 	}
 
