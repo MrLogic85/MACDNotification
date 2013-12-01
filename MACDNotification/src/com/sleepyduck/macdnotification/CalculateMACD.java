@@ -23,18 +23,20 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
-import android.os.AsyncTask;
-import android.support.v4.app.NotificationCompat;
+import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
 public class CalculateMACD {
-	public static final int NOTIFICATION = 0x1;
-	public static final int TOAST = 0x2;
+	private static final String LOG_TAG = CalculateMACD.class.getSimpleName();
+
+	public static final String DATA_SYMBOL = "symbol";
+	public static final String DATA_GROUP = "group";
+	public static final String DATA_MACD_LATEST = "latest_macd";
+	public static final String DATA_MACD_PREVIOUS = "previous_macd";
+	public static final String DATA_VALUE_LATEST = "latest_value";
+	public static final String DATA_VALUE_PREVIOUS = "previous_value";
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
 	private URI mUri;
@@ -42,8 +44,20 @@ public class CalculateMACD {
 	ArrayList<Float> mCloseData = new ArrayList<Float>();
 	private final Context mContext;
 
-	public CalculateMACD(final Context context) {
+	private MACDListener mListener = null;
+	private Bundle data = new Bundle();
+	private Handler mHandler;
+
+	public CalculateMACD(final Context context, MACDListener listener) {
 		mContext = context;
+		mListener = listener;
+
+		mHandler = new Handler();
+	}
+
+	public CalculateMACD(final Context context, MACDListener listener, String group) {
+		this(context, listener);
+		data.putString(DATA_GROUP, group);
 	}
 
 	private boolean buildURI(final String symbol) {
@@ -63,7 +77,7 @@ public class CalculateMACD {
 			mUri = new URI(query);
 			return true;
 		} catch (final URISyntaxException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 			mUri = null;
 			return false;
 		}
@@ -86,10 +100,10 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private String calculateAndDisplayMACD(final String symbol, final int flags) {
+	private void calculateMACD(final String symbol) {
 		if (!validateData()) {
-			Log.d(mContext.getString(R.string.log_tag), "Invalid data " + mCloseData);
-			return null;
+			Log.d(LOG_TAG, "Invalid data " + mCloseData);
+			return;
 		}
 
 		Collections.reverse(mCloseData);
@@ -98,45 +112,22 @@ public class CalculateMACD {
 			final List<Float> ema26 = calcEMA(mCloseData, 26);
 			final List<Float> macdLine = diff(ema12, ema26);
 
-			Log.d(mContext.getString(R.string.log_tag),
-					"MACD for " + symbol + " = " + macdLine.get(macdLine.size() - 1));
-			// final List<Float> signalLine = calcEMA(macdLine, 9);
-			// final List<Float> macdHistogram = diff(macdLine, signalLine);
+			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
+					+ ", based on " + mCloseData.size() + " values");
 
-			if ((flags & NOTIFICATION) > 0
-					&& macdLine.get(macdLine.size() - 1) * macdLine.get(macdLine.size() - 2) < 0) {
-				final NotificationManager notificationManager = (NotificationManager) mContext
-						.getSystemService(Context.NOTIFICATION_SERVICE);
-
-				final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
-				builder.setContentTitle("MACD Notification");
-				final String buyOrSell = macdLine.get(macdLine.size() - 1) > 0 ? "Buy" : "Sell";
-				builder.setContentText(buyOrSell + " " + symbol + ", MACD is "
-						+ macdLine.get(macdLine.size() - 1));
-				builder.setSmallIcon(R.drawable.ic_launcher);
-
-				final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),
-						PendingIntent.FLAG_UPDATE_CURRENT);
-				builder.setFullScreenIntent(intent, true);
-				notificationManager.notify((int) (Math.random() * 100000), builder.build());
-			}
-			if ((flags & TOAST) > 0) {
-				return symbol + " MACD is " + macdLine.get(macdLine.size() - 1) + ", based on "
-						+ mCloseData.size() + " values";
-			}
-			return null;
+			data.putFloat(DATA_MACD_LATEST, macdLine.get(macdLine.size() - 1));
+			data.putFloat(DATA_MACD_PREVIOUS, macdLine.get(macdLine.size() - 2));
+			data.putFloat(DATA_VALUE_LATEST, mCloseData.get(mCloseData.size() - 1));
+			data.putFloat(DATA_VALUE_PREVIOUS, mCloseData.get(mCloseData.size() - 2));
 		} else if (mCloseData.size() > 0) {
-			Log.d(mContext.getString(R.string.log_tag), "Not enough data " + mCloseData);
-			if ((flags & TOAST) > 0) {
-				return "Not enough data for " + symbol + ", only " + mCloseData.size() + " values found";
-			}
+			String message = "Not enough data for " + symbol + ", only " + mCloseData.size() + " values found";
+			Log.d(LOG_TAG, message);
+			publishProgress(message);
 		} else {
-			Log.d(mContext.getString(R.string.log_tag), symbol + " could not be found");
-			if ((flags & TOAST) > 0) {
-				return symbol + " could not be found";
-			}
+			String message = symbol + " could not be found";
+			Log.d(LOG_TAG, message);
+			publishProgress(message);
 		}
-		return null;
 	}
 
 	private List<Float> diff(final List<Float> LHS, final List<Float> RHS) {
@@ -170,7 +161,7 @@ public class CalculateMACD {
 			mData = sb.toString();
 			return true;
 		} catch (final IOException e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
 			return false;
 		}
 	}
@@ -193,11 +184,12 @@ public class CalculateMACD {
 				@Override
 				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
 					super.startElement(uri, localName, qName, attributes);
-                    mClose = qName.toLowerCase().equals("close");
+					mClose = qName.toLowerCase().equals("close");
 				}
 			});
 		} catch (final Exception e) {
-			e.printStackTrace();
+			Log.e(LOG_TAG, "", e);
+			publishProgress("Failed to parse data from Yahoo: " + e.getMessage());
 			return false;
 		}
 		return true;
@@ -210,25 +202,47 @@ public class CalculateMACD {
 		return true;
 	}
 
-	public void execute(final String symbol, final int flags) {
-		Log.d(mContext.getString(R.string.log_tag), "Calculate MACD for " + symbol);
-		new AsyncTask<Void, String, Void>() {
+	private void publishProgress(final String string) {
+		mHandler.post(new Runnable() {
 			@Override
-			protected Void doInBackground(final Void... params) {
-				if (buildURI(symbol) && fetchData() && parseData())
-					publishProgress(calculateAndDisplayMACD(symbol, flags));
-				else if ((flags & TOAST) > 0) {
-					publishProgress("An error has occurred for " + symbol);
-				}
-				return null;
+			public void run() {
+				if (mListener != null && string != null)
+					mListener.onMessage(string);
 			}
+		});
+	}
 
+	protected void publishResult(final Bundle data) {
+		mHandler.post(new Runnable() {
 			@Override
-			protected void onProgressUpdate(final String... values) {
-				super.onProgressUpdate(values);
-				if (values != null && values.length > 0 && values[0] != null)
-					Toast.makeText(mContext, values[0], Toast.LENGTH_LONG).show();
+			public void run() {
+				if (mListener != null)
+					mListener.onCalculationComplete(data);
 			}
-		}.execute();
+		});
+	}
+
+	protected void execute(final String... params) {
+		Thread thread = new Thread() {
+			@Override
+			public void run() {
+				if (params.length > 0) {
+					String symbol = params[0];
+					data.putString(DATA_SYMBOL, symbol);
+					Log.d(LOG_TAG, "Calculate MACD for " + symbol);
+					if (buildURI(symbol) && fetchData() && parseData())
+						calculateMACD(symbol);
+					else
+						publishProgress("An error has occurred for " + symbol);
+				}
+				publishResult(data);
+			}
+		};
+		thread.start();
+	}
+
+	public interface MACDListener {
+		public void onMessage(String message);
+		public void onCalculationComplete(Bundle data);
 	}
 }

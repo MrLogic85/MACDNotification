@@ -1,32 +1,119 @@
 package com.sleepyduck.macdnotification;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.Spinner;
+import android.widget.Toast;
+
+import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 
 public class ActivityMACD extends Activity {
+	private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
+
 	public static final String KEY_GROUP = "group";
 	public static final String KEY_COUNT = "count";
 	public static final String KEY_NAME = "name";
 	public static final String KEY_SEPPARATOR = ":";
+	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
+	private static final String KEY_VALUE_SEPPARATOR = "<=>";
 
 	private final List<String> mGroups = Collections.synchronizedList(new ArrayList<String>());
-	private final Map<String, List<String>> mSymbols = Collections
-			.synchronizedMap(new LinkedHashMap<String, List<String>>());
+	private final Map<String, List<String[]>> mSymbols = Collections
+			.synchronizedMap(new LinkedHashMap<String, List<String[]>>());
 	private ExpandableListAdapter mListAdapter;
 	private Spinner mGroupSpinner;
 	private ArrayAdapter<String> mSpinnerAdapter;
+	private View mAddLayout;
+	private EditText mNameEditText;
+
+	private MACDListener mMACDListener = new MACDListener() {
+
+		@Override
+		public void onMessage(String message) {
+			Toast.makeText(ActivityMACD.this, message, Toast.LENGTH_LONG).show();
+		}
+
+		@Override
+		public void onCalculationComplete(Bundle data) {
+			if (data.containsKey(CalculateMACD.DATA_MACD_LATEST)) {
+				String group = data.getString(CalculateMACD.DATA_GROUP);
+				String symbol = data.getString(CalculateMACD.DATA_SYMBOL);
+				String dataString = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+						data.getFloat(CalculateMACD.DATA_VALUE_LATEST),
+						data.getFloat(CalculateMACD.DATA_VALUE_PREVIOUS),
+						data.getFloat(CalculateMACD.DATA_MACD_LATEST),
+						data.getFloat(CalculateMACD.DATA_MACD_PREVIOUS));
+				for (String[] values : mSymbols.get(group)) {
+					if (values.length > 1 && values[0].equals(symbol)) {
+						values[1] = dataString;
+					}
+				}
+				mListAdapter.notifyDataSetChanged();
+			}
+		}
+	};
+
+	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent.hasExtra(KEY_GROUP) && intent.hasExtra(KEY_NAME)) {
+				String group = intent.getStringExtra(KEY_GROUP);
+				String symbol = intent.getStringExtra(KEY_NAME);
+				if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
+					onNewSymbolClicked(null);
+				}
+				if (mNameEditText != null) {
+					mNameEditText.setText(symbol);
+					mNameEditText.requestFocus();
+				}
+				mGroupSpinner.setSelection(mGroups.indexOf(group));
+			}
+		}
+	};
+
+	private ExpandableListView.OnChildClickListener mChildClickListener
+	= new ExpandableListView.OnChildClickListener() {
+		@Override
+		public boolean onChildClick(ExpandableListView expandableListView, View view, int group, int child, long id) {
+			String symbol = mSymbols.get(mGroups.get(group)).get(child)[0];
+			if (symbol != null && symbol.length() > 0) {
+				Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(uri);
+				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				startActivity(intent);
+			}
+			return true;
+		}
+	};
 
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
@@ -34,6 +121,9 @@ public class ActivityMACD extends Activity {
 		setContentView(R.layout.activity_macd);
 
 		mGroupSpinner = (Spinner) findViewById(R.id.spinnerGroup);
+		mAddLayout = findViewById(R.id.addLayout);
+		mNameEditText = (EditText) findViewById(R.id.editTextNewSymbol);
+
 		final ExpandableListView mListView = (ExpandableListView) findViewById(R.id.listView);
 
 		mSpinnerAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, mGroups);
@@ -41,36 +131,82 @@ public class ActivityMACD extends Activity {
 
 		mListAdapter = new ExpandableListAdapter(this, mGroups, mSymbols);
 		mListView.setAdapter(mListAdapter);
+		mListView.setOnChildClickListener(mChildClickListener);
 
-		mListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
+		load();
+	}
 
-			@Override
-			public boolean onChildClick(final ExpandableListView parent, final View v, final int groupPosition, final int childPosition, final long id) {
-				final String symbol = (String) mListAdapter.getChild(groupPosition, childPosition);
-				new CalculateMACD(getApplicationContext()).execute(symbol, CalculateMACD.TOAST);
-				return true;
+	private void load() {
+		Editor prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE).edit();
+		prefs.clear();
+		try {
+			FileInputStream in = null;
+			if (isExternalStorageReadable()) {
+				try {
+					File file = getExternalStorageFile();
+					if (file != null && file.exists()) {
+						in = new FileInputStream(file);
+					}
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "", e);
+				}
 			}
-		});
+			if (in == null) {
+				in = openFileInput("symbols.data");
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] keyVal = line.split(KEY_VALUE_SEPPARATOR);
+				if (keyVal.length > 1) {
+					if (keyVal[0].contains(KEY_COUNT)) {
+						try {
+							prefs.putInt(keyVal[0], Integer.parseInt(keyVal[1]));
+						} catch (NumberFormatException e) {
+							Log.e(LOG_TAG, "", e);
+						}
+					} else {
+						prefs.putString(keyVal[0], keyVal[1]);
+					}
+				} else {
+					Toast.makeText(this, "KeyVal error: " + keyVal, Toast.LENGTH_SHORT).show();
+				}
+			}
+			prefs.commit();
+			in.close();
+		} catch (FileNotFoundException e) {
+			Log.e(LOG_TAG, "", e);
+		} catch (IOException e) {
+			Log.e(LOG_TAG, "", e);
+		}
 	}
 
 	public void onAddSymbolClicked(final View view) {
-		final View addLayout = findViewById(R.id.addLayout);
-		addLayout.setVisibility(View.GONE);
+		mAddLayout.setVisibility(View.GONE);
 		if (mGroupSpinner.getVisibility() == View.VISIBLE) {
 			final String group = (String) mGroupSpinner.getSelectedItem();
 			if (group != null) {
-				final List<String> symbols = mSymbols.get(group);
-				final EditText symbolText = (EditText) findViewById(R.id.editTextNewSymbol);
-				if (symbolText != null && symbolText.getText() != null
-						&& !symbolText.getText().toString().equals(""))
-					symbols.add(symbolText.getText().toString());
+				final List<String[]> symbols = mSymbols.get(group);
+				if (mNameEditText != null && mNameEditText.getText() != null
+						&& !mNameEditText.getText().toString().equals("")) {
+					String[] data = new String[2];
+					data[0] = mNameEditText.getText().toString();
+					symbols.add(data);
+
+					new CalculateMACD(this, mMACDListener, group).execute(data[0]);
+				}
 			}
 		} else {
-			final EditText groupText = (EditText) findViewById(R.id.editTextNewSymbol);
-			if (groupText != null && groupText.getText() != null
-					&& !groupText.getText().toString().equals("")) {
-				mGroups.add(groupText.getText().toString());
-				mSymbols.put(groupText.getText().toString(), new ArrayList<String>());
+			if (mNameEditText != null && mNameEditText.getText() != null
+					&& !mNameEditText.getText().toString().equals("")) {
+				if (mGroups.contains(mNameEditText.getText().toString())) {
+					Toast.makeText(this, "That group alreay exists", Toast.LENGTH_LONG).show();
+					mAddLayout.setVisibility(View.VISIBLE);
+				} else {
+					mGroups.add(mNameEditText.getText().toString());
+					mSymbols.put(mNameEditText.getText().toString(), new ArrayList<String[]>());
+				}
 			}
 		}
 		mListAdapter.notifyDataSetChanged();
@@ -78,32 +214,28 @@ public class ActivityMACD extends Activity {
 	}
 
 	public void onNewGroupClicked(final View view) {
-		final View addLayout = findViewById(R.id.addLayout);
-		if (mGroupSpinner.getVisibility() == View.VISIBLE || addLayout.getVisibility() == View.GONE) {
-			final EditText editText = (EditText) findViewById(R.id.editTextNewSymbol);
+		if (mGroupSpinner.getVisibility() == View.VISIBLE || mAddLayout.getVisibility() == View.GONE) {
 			mGroupSpinner.setVisibility(View.GONE);
-			if (editText != null) {
-				editText.setText("");
-				editText.setHint(R.string.group_name);
+			if (mNameEditText != null) {
+				mNameEditText.setText("");
+				mNameEditText.setHint(R.string.group_name);
 			}
-			addLayout.setVisibility(View.VISIBLE);
+			mAddLayout.setVisibility(View.VISIBLE);
 		} else {
-			addLayout.setVisibility(View.GONE);
+			mAddLayout.setVisibility(View.GONE);
 		}
 	}
 
 	public void onNewSymbolClicked(final View view) {
-		final View addLayout = findViewById(R.id.addLayout);
-		if (mGroupSpinner.getVisibility() == View.GONE || addLayout.getVisibility() == View.GONE) {
+		if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
 			mGroupSpinner.setVisibility(View.VISIBLE);
-			final EditText editText = (EditText) findViewById(R.id.editTextNewSymbol);
-			if (editText != null) {
-				editText.setText("");
-				editText.setHint(R.string.symbol_name);
+			if (mNameEditText != null) {
+				mNameEditText.setText("");
+				mNameEditText.setHint(R.string.symbol_name);
 			}
-			addLayout.setVisibility(View.VISIBLE);
+			mAddLayout.setVisibility(View.VISIBLE);
 		} else {
-			addLayout.setVisibility(View.GONE);
+			mAddLayout.setVisibility(View.GONE);
 		}
 	}
 
@@ -114,23 +246,32 @@ public class ActivityMACD extends Activity {
 		editor.clear();
 		String groupName;
 		editor.putInt(KEY_COUNT, mGroups.size());
-		List<String> symbols;
+		List<String[]> symbols;
 		for (int i = 0; i < mGroups.size(); i++) {
 			groupName = mGroups.get(i);
 			if (groupName.length() > 0) {
 				editor.putString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_NAME, groupName);
 				symbols = mSymbols.get(groupName);
 				editor.putInt(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_COUNT, symbols.size());
-				Collections.sort(symbols);
+				Collections.sort(symbols, new Comparator<String[]>() {
+					@Override
+					public int compare(String[] lhs, String[] rhs) {
+						if (lhs.length > 0 && rhs.length > 0)
+							return lhs[0].compareTo(rhs[0]);
+						else
+							return lhs.length - rhs.length;
+					}});
 				for (int j = 0; j < symbols.size(); j++) {
-					if (symbols.get(j).length() > 0) {
-						editor.putString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_NAME,
-								symbols.get(j));
+					if (symbols.get(j).length > 0 && symbols.get(j)[0].length() > 0) {
+						editor.putString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_SEPPARATOR + KEY_NAME,
+								symbols.get(j)[0]);
 					}
 				}
 			}
 		}
 		editor.commit();
+
+		unregisterReceiver(mReceiver);
 	}
 
 	@Override
@@ -141,20 +282,90 @@ public class ActivityMACD extends Activity {
 		final SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE);
 		int symbolCount;
 		String groupName;
-		List<String> symbols;
+		List<String[]> symbols;
 		final int groupCount = prefs.getInt(KEY_COUNT, 0);
 		for (int i = 0; i < groupCount; i++) {
 			groupName = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_NAME, "Group");
 			mGroups.add(groupName);
-			symbols = new ArrayList<String>();
+			symbols = new ArrayList<String[]>();
 			mSymbols.put(groupName, symbols);
 			symbolCount = prefs.getInt(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + KEY_COUNT, 0);
 			for (int j = 0; j < symbolCount; j++) {
-				symbols.add(prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_NAME,
-						"-SYM-"));
+				String[] data = new String[2];
+				String name = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_NAME, "-SYM-");
+				if (name.equals("-SYM-")) {
+					name = prefs.getString(KEY_GROUP + KEY_SEPPARATOR + i + KEY_SEPPARATOR + j + KEY_SEPPARATOR + KEY_NAME, "-SYM-");
+				}
+				data[0] = name;
+				symbols.add(data);
+
+				new CalculateMACD(this, mMACDListener, groupName).execute(data[0]);
 			}
 		}
 		mListAdapter.notifyDataSetChanged();
 		mSpinnerAdapter.notifyDataSetChanged();
+
+		registerReceiver(mReceiver, new IntentFilter(ACTION_BROADCAST_REMOVE));
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		SharedPreferences prefs = getSharedPreferences(getPackageName(), MODE_PRIVATE);
+		try {
+			OutputStreamWriter out = null;
+			if (isExternalStorageWritable()) {
+				try {
+					File file = getExternalStorageFile();
+					if (file != null) {
+						out = new OutputStreamWriter(new FileOutputStream(file));
+					}
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "", e);
+				}
+			}
+			if (out == null) {
+				out = new OutputStreamWriter(openFileOutput("symbols.data", Context.MODE_PRIVATE));
+			}
+			String line;
+			for (String key : prefs.getAll().keySet()) {
+				Object val = prefs.getAll().get(key);
+				line = key + KEY_VALUE_SEPPARATOR + val + "\n";
+				out.write(line);
+			}
+			out.flush();
+			out.close();
+		} catch (FileNotFoundException e) {
+			Log.e(LOG_TAG, "", e);
+		} catch (IOException e) {
+			Log.e(LOG_TAG, "", e);
+		}
+	}
+
+	public File getExternalStorageFile() throws IOException {
+		File dir = getExternalFilesDir("data");
+		if (!dir.exists() && !dir.mkdirs()) {
+			Log.e(LOG_TAG, "Failed to create directory");
+		}
+		return new File(dir, "symbols.data");
+	}
+
+	/* Checks if external storage is available for read and write */
+	public boolean isExternalStorageWritable() {
+		String state = Environment.getExternalStorageState();
+		if (Environment.MEDIA_MOUNTED.equals(state)) {
+			return true;
+		}
+		return false;
+	}
+
+	/* Checks if external storage is available to at least read */
+	public boolean isExternalStorageReadable() {
+		String state = Environment.getExternalStorageState();
+		if (Environment.MEDIA_MOUNTED.equals(state) ||
+				Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+			return true;
+		}
+		return false;
 	}
 }
