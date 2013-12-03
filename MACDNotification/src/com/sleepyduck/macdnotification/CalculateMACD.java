@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.parsers.SAXParser;
@@ -37,13 +38,13 @@ public class CalculateMACD {
 	public static final String DATA_MACD_PREVIOUS = "previous_macd";
 	public static final String DATA_VALUE_LATEST = "latest_value";
 	public static final String DATA_VALUE_PREVIOUS = "previous_value";
+	public static final String DATA_SUCCESS = "success";
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
-	private URI mUri;
-	private String mData;
-	ArrayList<Float> mCloseData = new ArrayList<Float>();
+	//private URI mUri;
+	//private String mData;
+	//ArrayList<Float> mCloseData = new ArrayList<Float>();
 	private MACDListener mListener = null;
-	private Bundle data = new Bundle();
 	private Handler mHandler;
 
 	public CalculateMACD(final Context context, MACDListener listener) {
@@ -51,12 +52,7 @@ public class CalculateMACD {
 		mHandler = new Handler();
 	}
 
-	public CalculateMACD(final Context context, MACDListener listener, String group) {
-		this(context, listener);
-		data.putString(DATA_GROUP, group);
-	}
-
-	private boolean buildURI(final String symbol) {
+	private URI buildURI(final String symbol) {
 		final Calendar calendar = Calendar.getInstance();
 		final String end = String.format("%04d-%02d-%02d", calendar.get(Calendar.YEAR),
 				calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
@@ -70,12 +66,10 @@ public class CalculateMACD {
 			query = query.replace(" ", "%20").replace("=", "%3D").replace("\"", "%22").replace("^", "%5E");
 			query = "http://query.yahooapis.com/v1/public/yql?q=" + query;
 			query += "&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
-			mUri = new URI(query);
-			return true;
+			return new URI(query);
 		} catch (final URISyntaxException e) {
 			Log.e(LOG_TAG, "", e);
-			mUri = null;
-			return false;
+			return null;
 		}
 	}
 
@@ -96,27 +90,24 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private void calculateMACD(final String symbol) {
-		if (!validateData()) {
-			Log.d(LOG_TAG, "Invalid data " + mCloseData);
-			return;
-		}
-
-		Collections.reverse(mCloseData);
-		if (mCloseData.size() >= 26) {
-			final List<Float> ema12 = calcEMA(mCloseData, 12);
-			final List<Float> ema26 = calcEMA(mCloseData, 26);
+	private boolean calculateMACD(Bundle data, List<Float> closeData, final String symbol) {
+		Collections.reverse(closeData);
+		if (closeData.size() >= 26) {
+			final List<Float> ema12 = calcEMA(closeData, 12);
+			final List<Float> ema26 = calcEMA(closeData, 26);
 			final List<Float> macdLine = diff(ema12, ema26);
 
 			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
-					+ ", based on " + mCloseData.size() + " values");
+					+ ", based on " + closeData.size() + " values");
 
 			data.putFloat(DATA_MACD_LATEST, macdLine.get(macdLine.size() - 1));
 			data.putFloat(DATA_MACD_PREVIOUS, macdLine.get(macdLine.size() - 2));
-			data.putFloat(DATA_VALUE_LATEST, mCloseData.get(mCloseData.size() - 1));
-			data.putFloat(DATA_VALUE_PREVIOUS, mCloseData.get(mCloseData.size() - 2));
-		} else if (mCloseData.size() > 0) {
-			String message = "Not enough data for " + symbol + ", only " + mCloseData.size() + " values found";
+			data.putFloat(DATA_VALUE_LATEST, closeData.get(closeData.size() - 1));
+			data.putFloat(DATA_VALUE_PREVIOUS, closeData.get(closeData.size() - 2));
+			data.putBoolean(DATA_SUCCESS, true);
+			return true;
+		} else if (closeData.size() > 0) {
+			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		} else {
@@ -124,6 +115,8 @@ public class CalculateMACD {
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		}
+		data.putBoolean(DATA_SUCCESS, false);
+		return false;
 	}
 
 	private List<Float> diff(final List<Float> LHS, final List<Float> RHS) {
@@ -137,13 +130,10 @@ public class CalculateMACD {
 		return res;
 	}
 
-	private boolean fetchData() {
-		if (mUri == null)
-			return false;
-
+	private String fetchData(URI uri) {
 		final HttpClient client = new DefaultHttpClient();
 		final HttpGet request = new HttpGet();
-		request.setURI(mUri);
+		request.setURI(uri);
 		try {
 			final HttpResponse response = client.execute(request);
 			final BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
@@ -153,19 +143,18 @@ public class CalculateMACD {
 			while ((l = in.readLine()) != null) {
 				sb.append(l).append("\n");
 			}
-			in.close();
-			mData = sb.toString();
-			return true;
+			return sb.toString();
 		} catch (final IOException e) {
 			Log.e(LOG_TAG, "", e);
-			return false;
+			return null;
 		}
 	}
 
-	private boolean parseData() {
+	private List<Float> parseData(String uriData) {
+		final List<Float> closeData = new ArrayList<Float>();
 		try {
 			final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-			parser.parse(new InputSource(new StringReader(mData)), new DefaultHandler() {
+			parser.parse(new InputSource(new StringReader(uriData)), new DefaultHandler() {
 				private boolean mClose = false;
 
 				@Override
@@ -173,7 +162,7 @@ public class CalculateMACD {
 					super.ignorableWhitespace(ch, start, length);
 					if (mClose) {
 						final String data = String.copyValueOf(ch, start, length);
-						mCloseData.add(Float.valueOf(data));
+						closeData.add(Float.valueOf(data));
 					}
 				}
 
@@ -186,13 +175,16 @@ public class CalculateMACD {
 		} catch (final Exception e) {
 			Log.e(LOG_TAG, "", e);
 			publishProgress("Failed to parse data from Yahoo: " + e.getMessage());
-			return false;
+			publishProgress("Data: " + closeData);
+			return null;
 		}
-		return true;
+		return closeData;
 	}
 
-	private boolean validateData() {
-		for (final float val : mCloseData)
+	private boolean validateData(List<Float> closeData) {
+		if (closeData == null)
+			return false;
+		for (final float val : closeData)
 			if (val < 0)
 				return false;
 		return true;
@@ -218,23 +210,35 @@ public class CalculateMACD {
 		});
 	}
 
-	protected void execute(final String... params) {
-		Thread thread = new Thread() {
-			@Override
-			public void run() {
-				if (params.length > 0) {
-					String symbol = params[0];
-					data.putString(DATA_SYMBOL, symbol);
-					Log.d(LOG_TAG, "Calculate MACD for " + symbol);
-					if (buildURI(symbol) && fetchData() && parseData())
-						calculateMACD(symbol);
-					else
-						publishProgress("An error has occurred for " + symbol);
+	protected void execute(final Bundle... dataList) {
+		final List<Bundle> synchedParams = Collections.synchronizedList(new LinkedList<Bundle>());
+		Collections.addAll(synchedParams, dataList);
+		for (int i = 0; i < 10; ++i) {
+			new Thread() {
+				@Override
+				public void run() {
+					while (synchedParams.size() > 0) {
+						Bundle data = synchedParams.remove(0);
+						if (data.containsKey(DATA_SYMBOL)) {
+							String symbol = data.getString(DATA_SYMBOL);
+							Log.d(LOG_TAG, "Calculate MACD for " + symbol);
+
+							URI uri = buildURI(symbol);
+							if (uri != null) {
+								String uriData = fetchData(uri);
+								if (uriData != null) {
+									List<Float> closeData = parseData(uriData);
+									if (validateData(closeData)) {
+										calculateMACD(data, closeData, symbol);
+									}
+								}
+							}
+						}
+						publishResult(data);
+					}
 				}
-				publishResult(data);
-			}
-		};
-		thread.start();
+			}.start();
+		}
 	}
 
 	public interface MACDListener {

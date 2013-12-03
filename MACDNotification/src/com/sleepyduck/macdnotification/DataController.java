@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Environment;
 import android.util.Log;
-import android.widget.Toast;
 
 public class DataController {
 	private static final String LOG_TAG = DataController.class.getSimpleName();
@@ -97,6 +97,16 @@ public class DataController {
 		}
 	}
 
+	public List<String> getAllSymbols() {
+		List<String> symbols = new LinkedList<String>();
+		for (List<String[]> groupSymbols : mSymbols.values()) {
+			for (String[] symbolData : groupSymbols) {
+				symbols.add(symbolData[0]);
+			}
+		}
+		return symbols;
+	}
+
 	public void loadFromFile(Context context) {
 		Editor prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE).edit();
 		prefs.clear();
@@ -130,8 +140,6 @@ public class DataController {
 					} else {
 						prefs.putString(keyVal[0], keyVal[1]);
 					}
-				} else {
-					Toast.makeText(context, "KeyVal error: " + keyVal, Toast.LENGTH_SHORT).show();
 				}
 			}
 			prefs.commit();

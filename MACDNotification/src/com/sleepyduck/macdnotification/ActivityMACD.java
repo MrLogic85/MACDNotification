@@ -1,5 +1,8 @@
 package com.sleepyduck.macdnotification;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -103,11 +106,16 @@ public class ActivityMACD extends Activity {
 		if (savedInstanceState == null) {
 			mDataController.loadFromFile(this);
 			mDataController.load(this);
+			List<Bundle> dataList = new LinkedList<Bundle>();
 			for (String group : mDataController.getGroups()) {
 				for (String[] symbolData : mDataController.getSymbols(group)) {
-					new CalculateMACD(this, mMACDListener, group).execute(symbolData[0]);
+					Bundle data = new Bundle();
+					data.putString(CalculateMACD.DATA_SYMBOL, symbolData[0]);
+					data.putString(CalculateMACD.DATA_GROUP, group);
+					dataList.add(data);
 				}
 			}
+			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Bundle[dataList.size()]));
 			mDataController.clearSymbolData();
 			mDataController.save(this);
 
@@ -151,7 +159,10 @@ public class ActivityMACD extends Activity {
 					&& !mNameEditText.getText().toString().equals("")) {
 				String symbol = mNameEditText.getText().toString();
 				mDataController.addSymbol(group, symbol);
-				new CalculateMACD(this, mMACDListener, group).execute(symbol);
+				Bundle data = new Bundle();
+				data.putString(CalculateMACD.DATA_SYMBOL, symbol);
+				data.putString(CalculateMACD.DATA_GROUP, group);
+				new CalculateMACD(this, mMACDListener).execute(data);
 			}
 		} else {
 			// Add group
