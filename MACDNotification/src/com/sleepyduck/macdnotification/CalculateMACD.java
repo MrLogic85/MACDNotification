@@ -25,20 +25,13 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
+import com.sleepyduck.macdnotification.data.Symbol;
+
 public class CalculateMACD {
 	private static final String LOG_TAG = CalculateMACD.class.getSimpleName();
-
-	public static final String DATA_SYMBOL = "symbol";
-	public static final String DATA_GROUP = "group";
-	public static final String DATA_MACD_LATEST = "latest_macd";
-	public static final String DATA_MACD_PREVIOUS = "previous_macd";
-	public static final String DATA_VALUE_LATEST = "latest_value";
-	public static final String DATA_VALUE_PREVIOUS = "previous_value";
-	public static final String DATA_SUCCESS = "success";
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
 	//private URI mUri;
@@ -90,32 +83,30 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private boolean calculateMACD(Bundle data, List<Float> closeData, final String symbol) {
+	private boolean calculateMACD(Symbol symbol, List<Float> closeData, final Symbol symbol2) {
 		Collections.reverse(closeData);
 		if (closeData.size() >= 26) {
 			final List<Float> ema12 = calcEMA(closeData, 12);
 			final List<Float> ema26 = calcEMA(closeData, 26);
 			final List<Float> macdLine = diff(ema12, ema26);
 
-			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
+			Log.d(LOG_TAG, symbol2 + " MACD is " + macdLine.get(macdLine.size() - 1)
 					+ ", based on " + closeData.size() + " values");
 
-			data.putFloat(DATA_MACD_LATEST, macdLine.get(macdLine.size() - 1));
-			data.putFloat(DATA_MACD_PREVIOUS, macdLine.get(macdLine.size() - 2));
-			data.putFloat(DATA_VALUE_LATEST, closeData.get(closeData.size() - 1));
-			data.putFloat(DATA_VALUE_PREVIOUS, closeData.get(closeData.size() - 2));
-			data.putBoolean(DATA_SUCCESS, true);
+			symbol.setMACD(macdLine.get(macdLine.size() - 1));
+			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
+			symbol.setValue(closeData.get(closeData.size() - 1));
+			symbol.setValueOld(closeData.get(closeData.size() - 2));
 			return true;
 		} else if (closeData.size() > 0) {
-			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
+			String message = "Not enough data for " + symbol2 + ", only " + closeData.size() + " values found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		} else {
-			String message = symbol + " could not be found";
+			String message = symbol2 + " could not be found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		}
-		data.putBoolean(DATA_SUCCESS, false);
 		return false;
 	}
 
@@ -200,41 +191,38 @@ public class CalculateMACD {
 		});
 	}
 
-	protected void publishResult(final Bundle data) {
+	protected void publishResult(final Symbol symbol) {
 		mHandler.post(new Runnable() {
 			@Override
 			public void run() {
 				if (mListener != null)
-					mListener.onCalculationComplete(data);
+					mListener.onCalculationComplete(symbol);
 			}
 		});
 	}
 
-	protected void execute(final Bundle... dataList) {
-		final List<Bundle> synchedParams = Collections.synchronizedList(new LinkedList<Bundle>());
-		Collections.addAll(synchedParams, dataList);
+	protected void execute(final Symbol... symbolList) {
+		final List<Symbol> synchedSymbols = Collections.synchronizedList(new LinkedList<Symbol>());
+		Collections.addAll(synchedSymbols, symbolList);
 		for (int i = 0; i < 10; ++i) {
 			new Thread() {
 				@Override
 				public void run() {
-					while (synchedParams.size() > 0) {
-						Bundle data = synchedParams.remove(0);
-						if (data.containsKey(DATA_SYMBOL)) {
-							String symbol = data.getString(DATA_SYMBOL);
-							Log.d(LOG_TAG, "Calculate MACD for " + symbol);
+					while (synchedSymbols.size() > 0) {
+						Symbol symbol = synchedSymbols.remove(0);
+						Log.d(LOG_TAG, "Calculate MACD for " + symbol.getName());
 
-							URI uri = buildURI(symbol);
-							if (uri != null) {
-								String uriData = fetchData(uri);
-								if (uriData != null) {
-									List<Float> closeData = parseData(uriData);
-									if (validateData(closeData)) {
-										calculateMACD(data, closeData, symbol);
-									}
+						URI uri = buildURI(symbol.getName());
+						if (uri != null) {
+							String uriData = fetchData(uri);
+							if (uriData != null) {
+								List<Float> closeData = parseData(uriData);
+								if (validateData(closeData)) {
+									calculateMACD(symbol, closeData, symbol);
 								}
 							}
 						}
-						publishResult(data);
+						publishResult(symbol);
 					}
 				}
 			}.start();
@@ -243,6 +231,6 @@ public class CalculateMACD {
 
 	public interface MACDListener {
 		public void onMessage(String message);
-		public void onCalculationComplete(Bundle data);
+		public void onCalculationComplete(Symbol symbol);
 	}
 }

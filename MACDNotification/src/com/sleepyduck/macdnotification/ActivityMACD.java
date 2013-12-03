@@ -18,13 +18,17 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
+import com.sleepyduck.macdnotification.data.DataController;
+import com.sleepyduck.macdnotification.data.Group;
+import com.sleepyduck.macdnotification.data.Symbol;
 
 public class ActivityMACD extends Activity {
 	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
+	public static final String DATA_REMOVED_SYMBOL = "removed_symbol";
 
 	private ExpandableListAdapter mListAdapter;
 	private Spinner mGroupSpinner;
-	private ArrayAdapter<String> mSpinnerAdapter;
+	private ArrayAdapter<Group> mSpinnerAdapter;
 	private View mAddLayout;
 	private EditText mNameEditText;
 	private DataController mDataController = new DataController();
@@ -37,34 +41,22 @@ public class ActivityMACD extends Activity {
 		}
 
 		@Override
-		public void onCalculationComplete(Bundle bundle) {
-			if (bundle.containsKey(CalculateMACD.DATA_MACD_LATEST)) {
-				String group = bundle.getString(CalculateMACD.DATA_GROUP);
-				String symbol = bundle.getString(CalculateMACD.DATA_SYMBOL);
-				String data = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-						bundle.getFloat(CalculateMACD.DATA_VALUE_LATEST),
-						bundle.getFloat(CalculateMACD.DATA_VALUE_PREVIOUS),
-						bundle.getFloat(CalculateMACD.DATA_MACD_LATEST),
-						bundle.getFloat(CalculateMACD.DATA_MACD_PREVIOUS));
-				mDataController.setSymbolData(group, symbol, data);
-				mListAdapter.notifyDataSetChanged();
-			}
+		public void onCalculationComplete(Symbol symbol) {
+			mListAdapter.notifyDataSetChanged();
 		}
 	};
 	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			if (intent.hasExtra(DataController.KEY_GROUP) && intent.hasExtra(DataController.KEY_NAME)) {
-				String group = intent.getStringExtra(DataController.KEY_GROUP);
-				String symbol = intent.getStringExtra(DataController.KEY_NAME);
+			if (intent.hasExtra(DATA_REMOVED_SYMBOL)) {
+				Symbol symbol = intent.getParcelableExtra(DATA_REMOVED_SYMBOL);
 				if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
 					onNewSymbolClicked(null);
 				}
 				if (mNameEditText != null) {
-					mNameEditText.setText(symbol);
+					mNameEditText.setText(symbol.getName());
 					mNameEditText.requestFocus();
 				}
-				mGroupSpinner.setSelection(mDataController.getGroupIndex(group));
 			}
 		}
 	};
@@ -72,15 +64,13 @@ public class ActivityMACD extends Activity {
 	private ExpandableListView.OnChildClickListener mChildClickListener =
 			new ExpandableListView.OnChildClickListener() {
 		@Override
-		public boolean onChildClick(ExpandableListView expandableListView, View view, int group, int symbol, long id) {
-			String symbolName = mDataController.getSymbol(group, symbol);
-			if (symbolName != null && symbolName.length() > 0) {
-				Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbolName + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
-				Intent intent = new Intent(Intent.ACTION_VIEW);
-				intent.setData(uri);
-				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				startActivity(intent);
-			}
+		public boolean onChildClick(ExpandableListView expandableListView, View view, int groupIndex, int symbolIndex, long id) {
+			Symbol symbol = mDataController.getGroup(groupIndex).getSymbol(symbolIndex);
+			Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+			intent.setData(uri);
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			startActivity(intent);
 			return true;
 		}
 	};
@@ -96,50 +86,32 @@ public class ActivityMACD extends Activity {
 
 		final ExpandableListView mListView = (ExpandableListView) findViewById(R.id.listView);
 
-		mSpinnerAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, mDataController.getGroups());
+		mSpinnerAdapter = new ArrayAdapter<Group>(this, android.R.layout.simple_spinner_item, mDataController.getGroups());
 		mGroupSpinner.setAdapter(mSpinnerAdapter);
 
-		mListAdapter = new ExpandableListAdapter(this, mDataController.getGroups(), mDataController.getSymbolsDataContainer());
+		mListAdapter = new ExpandableListAdapter(this, mDataController.getGroups());
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnChildClickListener(mChildClickListener);
 
 		if (savedInstanceState == null) {
 			mDataController.loadFromFile(this);
-			mDataController.load(this);
-			List<Bundle> dataList = new LinkedList<Bundle>();
-			for (String group : mDataController.getGroups()) {
-				for (String[] symbolData : mDataController.getSymbols(group)) {
-					Bundle data = new Bundle();
-					data.putString(CalculateMACD.DATA_SYMBOL, symbolData[0]);
-					data.putString(CalculateMACD.DATA_GROUP, group);
-					dataList.add(data);
-				}
+			List<Symbol> dataList = new LinkedList<Symbol>();
+			for (Group group : mDataController.getGroups()) {
+				dataList.addAll(group.getSymbols());
 			}
-			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Bundle[dataList.size()]));
-			mDataController.clearSymbolData();
-			mDataController.save(this);
-
-			// TODO store symbol data in savedInstanceState, not on file
+			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
+			mListAdapter.notifyDataSetChanged();
+			mSpinnerAdapter.notifyDataSetChanged();
 		}
 
 		registerReceiver(mReceiver, new IntentFilter(ACTION_BROADCAST_REMOVE));
 	}
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		mDataController.load(this);
-		mListAdapter.notifyDataSetChanged();
-		mSpinnerAdapter.notifyDataSetChanged();
-
-		registerReceiver(mReceiver, new IntentFilter(ACTION_BROADCAST_REMOVE));
-	}
 
 	@Override
-	public void onPause() {
-		super.onPause();
-		mDataController.save(this);
-		unregisterReceiver(mReceiver);
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		mDataController.save(outState);
 	}
 
 	@Override
@@ -152,23 +124,18 @@ public class ActivityMACD extends Activity {
 		mAddLayout.setVisibility(View.GONE);
 		if (mGroupSpinner.getVisibility() == View.VISIBLE) {
 			// Add Symbol
-			final String group = (String) mGroupSpinner.getSelectedItem();
-			if (group != null
-					&& mNameEditText != null
+			if (mNameEditText != null
 					&& mNameEditText.getText() != null
 					&& !mNameEditText.getText().toString().equals("")) {
-				String symbol = mNameEditText.getText().toString();
-				mDataController.addSymbol(group, symbol);
-				Bundle data = new Bundle();
-				data.putString(CalculateMACD.DATA_SYMBOL, symbol);
-				data.putString(CalculateMACD.DATA_GROUP, group);
-				new CalculateMACD(this, mMACDListener).execute(data);
+				String symbolName = mNameEditText.getText().toString();
+				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName);
+				new CalculateMACD(this, mMACDListener).execute(symbol);
 			}
 		} else {
 			// Add group
 			if (mNameEditText != null && mNameEditText.getText() != null
 					&& !mNameEditText.getText().toString().equals("")) {
-				if (mDataController.containsGroup(mNameEditText.getText().toString())) {
+				if (mDataController.getGroupIndex(mNameEditText.getText().toString()) > -1) {
 					Toast.makeText(this, "That group alreay exists", Toast.LENGTH_LONG).show();
 					mAddLayout.setVisibility(View.VISIBLE);
 				} else {

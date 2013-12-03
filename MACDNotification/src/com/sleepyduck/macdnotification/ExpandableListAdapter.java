@@ -1,7 +1,6 @@
 package com.sleepyduck.macdnotification;
 
 import java.util.List;
-import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,23 +17,24 @@ import android.widget.BaseExpandableListAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.sleepyduck.macdnotification.data.Group;
+import com.sleepyduck.macdnotification.data.Symbol;
+
 /**
  * @author Fredrik Metcalf
  */
 public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	private final Activity mContext;
-	private final Map<String, List<String[]>> mSymbols;
-	private final List<String> mGroups;
+	private final List<Group> mGroups;
 
-	public ExpandableListAdapter(Activity context, List<String> groups, Map<String, List<String[]>> symbols) {
+	public ExpandableListAdapter(Activity context, List<Group> groups) {
 		mContext = context;
 		mGroups = groups;
-		mSymbols = symbols;
 	}
 
 	@Override
 	public Object getChild(int groupPosition, int childPosition) {
-		return mSymbols.get(mGroups.get(groupPosition)).get(childPosition);
+		return mGroups.get(groupPosition).getSymbol(childPosition);
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	@Override
 	public View getChildView(final int groupPosition, final int childPosition,
 			boolean isLastChild, View convertView, ViewGroup parent) {
-		final String[] symbol = (String[]) getChild(groupPosition, childPosition);
+		final Symbol symbol = (Symbol) getChild(groupPosition, childPosition);
 		LayoutInflater inflater = mContext.getLayoutInflater();
 
 		if (convertView == null) {
@@ -83,26 +83,19 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				}
 			});
 
-			if (symbol.length > 0 && symbol[0] != null)
-				symbolText.setText(symbol[0]);
-			if (symbol.length > 1 && symbol[1] != null) {
-				dataText.setText(symbol[1]);
-				if (symbol[1].contains("Price")) {
-					String[] splitString = symbol[1].split(" ");
-					if (splitString.length > 4) {
-						String macd = splitString[4].replace(",", ".");
-						try {
-							float fMacd = Float.valueOf(macd);
-							if (fMacd >= 0) {
-								symbolText.setTextColor(Color.GREEN);
-							} else {
-								symbolText.setTextColor(Color.RED);
-							}
-						} catch (NumberFormatException e) {
-							// Could probably not parse the minus sign
-							symbolText.setTextColor(Color.RED);
-						}
-					}
+			symbolText.setText(symbol.getName());
+			if (symbol.getMACD() > -1f) {
+				String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+						symbol.getValue(),
+						symbol.getValueOld(),
+						symbol.getMACD(),
+						symbol.getMACDOld());
+				dataText.setText(text);
+
+				if (symbol.getMACD() >= 0f) {
+					symbolText.setTextColor(Color.GREEN);
+				} else {
+					symbolText.setTextColor(Color.RED);
 				}
 			}
 			return convertView;
@@ -111,27 +104,24 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	}
 
 	private void removeChild(int groupPosition, int childPosition) {
-		String group = mGroups.get(groupPosition);
-		List<String[]> children = mSymbols.get(group);
-		String[] symbol = children.remove(childPosition);
+		Group group = mGroups.get(groupPosition);
+		Symbol symbol = group.removeSymbol(childPosition);
 		notifyDataSetChanged();
 		Intent intent = new Intent(ActivityMACD.ACTION_BROADCAST_REMOVE);
-		intent.putExtra(DataController.KEY_GROUP, group);
-		intent.putExtra(DataController.KEY_NAME, symbol[0]);
+		intent.putExtra(ActivityMACD.DATA_REMOVED_SYMBOL, symbol);
 		mContext.sendBroadcast(intent);
 	}
 
 	private void removeGroup(int location) {
-		if(0 <= location && location < mGroups.size()) {
-			String group = mGroups.remove(location);
-			mSymbols.remove(group);
+		if (mGroups.size() > location) {
+			mGroups.remove(location);
 			notifyDataSetChanged();
 		}
 	}
 
 	@Override
 	public int getChildrenCount(int groupPosition) {
-		return mSymbols.get(mGroups.get(groupPosition)).size();
+		return mGroups.get(groupPosition).getSymbols().size();
 	}
 
 	@Override
