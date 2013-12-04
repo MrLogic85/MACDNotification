@@ -3,7 +3,12 @@ package com.sleepyduck.macdnotification.data;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class Symbol implements Parcelable {
+import com.sleepyduck.macdnotification.data.xml.XMLElement;
+import com.sleepyduck.macdnotification.data.xml.XMLParsableAdaptor;
+
+public class Symbol extends XMLParsableAdaptor implements Parcelable {
+	private static final long serialVersionUID = -2937633173541304552L;
+
 	public static final Parcelable.Creator<Symbol> CREATOR = new Parcelable.Creator<Symbol>() {
 		@Override
 		public Symbol createFromParcel(Parcel in) {
@@ -59,6 +64,16 @@ public class Symbol implements Parcelable {
 	@Override
 	public String toString() {
 		return mName;
+	}
+
+	@Override
+	public void putAttributes(XMLElement element) {
+		super.putAttributes(element);
+		element.addAttribute("name", mName);
+		element.addAttribute("value", String.valueOf(mValue));
+		element.addAttribute("valueOld", String.valueOf(mValueOld));
+		element.addAttribute("macd", String.valueOf(mMACD));
+		element.addAttribute("macdOld", String.valueOf(mMACDOld));
 	}
 
 	public String getName() {

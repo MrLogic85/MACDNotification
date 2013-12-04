@@ -20,6 +20,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 
+import com.sleepyduck.macdnotification.data.xml.XMLElement;
+
 public class DataController {
 	private static final String LOG_TAG = DataController.class.getSimpleName();
 	private static final String PARCELABLE_DATA = "parcelable_data";
@@ -150,6 +152,7 @@ public class DataController {
 
 	public void loadFromFile(Context context) {
 		loadFromFile_1(context);
+		load_1(context);
 	}
 
 	public void load(Bundle savedInstanceState) {
@@ -163,43 +166,43 @@ public class DataController {
 	}
 
 	public void saveToFile(Context context) {
-		SharedPreferences prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+		FileOutputStream fileOut = null;
+		OutputStreamWriter writer = null;
 		try {
-			OutputStreamWriter out = null;
-			if (isExternalStorageWritable()) {
-				try {
-					File file = getExternalStorageFile(context);
-					if (file != null) {
-						out = new OutputStreamWriter(new FileOutputStream(file));
-					}
-				} catch (IOException e) {
-					Log.e(LOG_TAG, "", e);
-				}
+			File file = getExternalStorageFile(context);
+			fileOut = new FileOutputStream(file);
+			writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+			XMLElement base = new XMLElement("Groups");
+			for (int i = 0; i < mGroups.size(); ++i) {
+				base.addChild(mGroups.get(i).toXMLElement());
 			}
-			if (out == null) {
-				out = new OutputStreamWriter(context.openFileOutput("symbols.data", Context.MODE_PRIVATE));
+			writer.write(base.toString());
+			writer.flush();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (fileOut != null) {
+			try {
+				fileOut.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			String line;
-			for (String key : prefs.getAll().keySet()) {
-				Object val = prefs.getAll().get(key);
-				line = key + ":" + val + "\n";
-				out.write(line);
+		}
+		if (writer != null) {
+			try {
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			out.flush();
-			out.close();
-		} catch (FileNotFoundException e) {
-			Log.e(LOG_TAG, "", e);
-		} catch (IOException e) {
-			Log.e(LOG_TAG, "", e);
 		}
 	}
 
 	public File getExternalStorageFile(Context context) throws IOException {
-		File dir = context.getExternalFilesDir("data");
+		File dir = new File(Environment.getExternalStorageDirectory(), "MACDNotification");
 		if (!dir.exists() && !dir.mkdirs()) {
 			Log.e(LOG_TAG, "Failed to create directory");
 		}
-		return new File(dir, "symbols.data");
+		return new File(dir, "MACDData.xml");
 	}
 
 	/* Checks if external storage is available for read and write */

@@ -7,7 +7,12 @@ import java.util.List;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class Group implements Parcelable {
+import com.sleepyduck.macdnotification.data.xml.XMLElement;
+import com.sleepyduck.macdnotification.data.xml.XMLParsableAdaptor;
+
+public class Group extends XMLParsableAdaptor implements Parcelable {
+	private static final long serialVersionUID = 614420628326821169L;
+
 	public static final Parcelable.Creator<Group> CREATOR = new Parcelable.Creator<Group>() {
 		@Override
 		public Group createFromParcel(Parcel in) {
@@ -54,6 +59,16 @@ public class Group implements Parcelable {
 	@Override
 	public String toString() {
 		return mName;
+	}
+
+	@Override
+	public void putAttributes(XMLElement element) {
+		super.putAttributes(element);
+		element.addAttribute("name", mName);
+		XMLElement symbols = element.addChild(new XMLElement("Symbols"));
+		for (int i = 0; i < mSymbols.size(); ++i) {
+			symbols.addChild(mSymbols.get(i).toXMLElement());
+		}
 	}
 
 	public String getName() {

@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -108,7 +109,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		Symbol symbol = group.removeSymbol(childPosition);
 		notifyDataSetChanged();
 		Intent intent = new Intent(ActivityMACD.ACTION_BROADCAST_REMOVE);
-		intent.putExtra(ActivityMACD.DATA_REMOVED_SYMBOL, symbol);
+		intent.putExtra(ActivityMACD.DATA_REMOVED_SYMBOL, (Parcelable) symbol);
 		mContext.sendBroadcast(intent);
 	}
 
@@ -142,7 +143,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	@Override
 	public View getGroupView(final int groupPosition, boolean isExpanded,
 			View groupView, ViewGroup parent) {
-		String groupName = (String) getGroup(groupPosition);
+		Group group = (Group) getGroup(groupPosition);
 
 		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		groupView = groupView != null ? groupView : inflater.inflate(R.layout.list_group_item, null);
@@ -152,7 +153,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 			item = (TextView) groupView.findViewById(R.id.textViewGroupName);
 			if (item != null) {
 				item.setTypeface(null, Typeface.BOLD);
-				item.setText(groupName);
+				item.setText(group.getName());
 			}
 		}
 

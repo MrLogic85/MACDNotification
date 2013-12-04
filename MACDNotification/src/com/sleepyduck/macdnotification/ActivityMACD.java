@@ -117,6 +117,7 @@ public class ActivityMACD extends Activity {
 	@Override
 	public void onStop() {
 		super.onStop();
+		unregisterReceiver(mReceiver);
 		mDataController.saveToFile(this);
 	}
 

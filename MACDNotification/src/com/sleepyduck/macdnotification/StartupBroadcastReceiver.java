@@ -14,7 +14,6 @@ import android.net.NetworkInfo;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
@@ -28,9 +27,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	private MACDListener listener = new MACDListener() {
 
 		@Override
-		public void onMessage(String message) {
-			Toast.makeText(mContext, message, Toast.LENGTH_LONG).show();
-		}
+		public void onMessage(String message) {}
 
 		@Override
 		public void onCalculationComplete(Symbol symbol) {
