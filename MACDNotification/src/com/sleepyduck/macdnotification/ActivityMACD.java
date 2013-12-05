@@ -100,9 +100,11 @@ public class ActivityMACD extends Activity {
 				dataList.addAll(group.getSymbols());
 			}
 			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
-			mListAdapter.notifyDataSetChanged();
-			mSpinnerAdapter.notifyDataSetChanged();
+		} else {
+			mDataController.load(savedInstanceState);
 		}
+		mListAdapter.notifyDataSetChanged();
+		mSpinnerAdapter.notifyDataSetChanged();
 
 		registerReceiver(mReceiver, new IntentFilter(ACTION_BROADCAST_REMOVE));
 	}

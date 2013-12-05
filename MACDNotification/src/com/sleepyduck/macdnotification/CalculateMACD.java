@@ -34,9 +34,6 @@ public class CalculateMACD {
 	private static final String LOG_TAG = CalculateMACD.class.getSimpleName();
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
-	//private URI mUri;
-	//private String mData;
-	//ArrayList<Float> mCloseData = new ArrayList<Float>();
 	private MACDListener mListener = null;
 	private Handler mHandler;
 

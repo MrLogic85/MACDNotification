@@ -1,25 +1,10 @@
 package com.sleepyduck.macdnotification.data;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
 import com.sleepyduck.macdnotification.data.xml.XMLParsableAdaptor;
 
-public class Symbol extends XMLParsableAdaptor implements Parcelable {
+public class Symbol extends XMLParsableAdaptor {
 	private static final long serialVersionUID = -2937633173541304552L;
-
-	public static final Parcelable.Creator<Symbol> CREATOR = new Parcelable.Creator<Symbol>() {
-		@Override
-		public Symbol createFromParcel(Parcel in) {
-			return new Symbol(in);
-		}
-
-		@Override
-		public Symbol[] newArray(int size) {
-			return new Symbol[size];
-		}
-	};
 
 	private String mName = "";
 	private Float mValue = -1f;
@@ -27,30 +12,16 @@ public class Symbol extends XMLParsableAdaptor implements Parcelable {
 	private Float mMACD = -1f;
 	private Float mMACDOld = -1f;
 
-	public Symbol(Parcel in) {
-		mName = in.readString();
-		mValue = in.readFloat();
-		mValueOld = in.readFloat();
-		mMACD = in.readFloat();
-		mMACDOld = in.readFloat();
-	}
-
 	public Symbol(String name) {
 		mName = name;
 	}
 
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeString(mName);
-		dest.writeFloat(mValue);
-		dest.writeFloat(mValueOld);
-		dest.writeFloat(mMACD);
-		dest.writeFloat(mMACDOld);
+	public Symbol(XMLElement element) {
+		mName = element.getAttribute("name", "");
+		mValue = Float.valueOf(element.getAttribute("value", "-1"));
+		mValueOld = Float.valueOf(element.getAttribute("valueOld", "-1"));
+		mMACD = Float.valueOf(element.getAttribute("macd", "-1"));
+		mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-1"));
 	}
 
 	@Override

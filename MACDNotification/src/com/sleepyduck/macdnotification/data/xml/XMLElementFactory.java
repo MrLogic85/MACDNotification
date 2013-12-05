@@ -1,6 +1,7 @@
 package com.sleepyduck.macdnotification.data.xml;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.util.List;
@@ -32,10 +33,9 @@ public class XMLElementFactory implements Serializable {
 	 * @throws SAXException
 	 * @throws IOException
 	 */
-	public static List<XMLElement> BuildFromXMLString(final String xmlString) throws ParserConfigurationException, SAXException, IOException {
+	public static List<XMLElement> BuildFromReader(final Reader reader) throws ParserConfigurationException, SAXException, IOException {
 		final XMLElement startElement = new XMLElement();
 		final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-		final StringReader reader = new StringReader(xmlString);
 		parser.parse(new InputSource(reader), new DefaultHandler() {
 			XMLElement currentElement = startElement;
 
@@ -66,6 +66,20 @@ public class XMLElementFactory implements Serializable {
 			}
 		});
 		return startElement.getChildren();
+	}
+
+	/**
+	 * Builds a XMLElement structure from a XML String using a {@link SAXParser}
+	 * 
+	 * @param xmlString
+	 * @return
+	 * @throws ParserConfigurationException
+	 * @throws SAXException
+	 * @throws IOException
+	 */
+	public static List<XMLElement> BuildFromXMLString(final String xmlString) throws ParserConfigurationException, SAXException, IOException {
+		final StringReader reader = new StringReader(xmlString);
+		return BuildFromReader(reader);
 	}
 
 	private final IXMLParsable mRegisteredXMLObject;

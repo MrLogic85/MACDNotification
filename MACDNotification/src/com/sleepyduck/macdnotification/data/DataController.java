@@ -13,6 +13,10 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -21,10 +25,11 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
+import com.sleepyduck.macdnotification.data.xml.XMLElementFactory;
 
 public class DataController {
 	private static final String LOG_TAG = DataController.class.getSimpleName();
-	private static final String PARCELABLE_DATA = "parcelable_data";
+	private static final String SERIALIZABLE_DATA = "parcelable_data";
 
 	private final List<Group> mGroups = Collections.synchronizedList(new ArrayList<Group>());
 
@@ -83,86 +88,54 @@ public class DataController {
 		return symbols;
 	}
 
-	public void loadFromFile_1(Context context) {
-		Editor prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE).edit();
-		prefs.clear();
+	public void loadFromFile(Context context) {
+		FileInputStream in = null;
 		try {
-			FileInputStream in = null;
 			if (isExternalStorageReadable()) {
-				try {
-					File dir = context.getExternalFilesDir("data");
-					if (!dir.exists() && !dir.mkdirs()) {
-						Log.e(LOG_TAG, "Failed to create directory");
-					}
-					File file = new File(dir, "symbols.data");
-					if (file != null && file.exists()) {
-						in = new FileInputStream(file);
-					}
-				} catch (IOException e) {
-					Log.e(LOG_TAG, "", e);
-				}
-			}
-			if (in == null) {
-				in = context.openFileInput("symbols.data");
-			}
-			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-
-			String line;
-			while ((line = reader.readLine()) != null) {
-				String[] keyVal = line.split("<=>");
-				if (keyVal.length > 1) {
-					if (keyVal[0].contains("count")) {
-						try {
-							prefs.putInt(keyVal[0], Integer.parseInt(keyVal[1]));
-						} catch (NumberFormatException e) {
-							Log.e(LOG_TAG, "", e);
+				File file = getExternalStorageFile(context);
+				if (file != null && file.exists()) {
+					in = new FileInputStream(file);
+					List<XMLElement> roots = XMLElementFactory.BuildFromReader(new InputStreamReader(in));
+					if (roots.size() > 0) {
+						XMLElement root = roots.get(0);
+						if (!root.getName().equals("Groups"))
+							return;
+						for (XMLElement xmlGroup : root.getChildren()) {
+							Group group = new Group(xmlGroup);
+							mGroups.add(group);
 						}
-					} else {
-						prefs.putString(keyVal[0], keyVal[1]);
 					}
 				}
 			}
-			prefs.commit();
-			in.close();
 		} catch (FileNotFoundException e) {
 			Log.e(LOG_TAG, "", e);
 		} catch (IOException e) {
 			Log.e(LOG_TAG, "", e);
-		}
-	}
-
-	public void load_1(Context context) {
-		mGroups.clear();
-		final SharedPreferences prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
-		final int groupCount = prefs.getInt("count", 0);
-		for (int i = 0; i < groupCount; i++) {
-			String groupName = prefs.getString("group:" + i + ":name", "Group");
-			Group group = new Group(groupName);
-			mGroups.add(group);
-			int symbolCount = prefs.getInt("group:" + i + ":count", 0);
-			for (int j = 0; j < symbolCount; j++) {
-				String name = prefs.getString("group:" + i + ":" + j + "name", "");
-				if (name.equals("")) {
-					name = prefs.getString("group:" + i + ":" + j + ":name", "");
+		} catch (ParserConfigurationException e) {
+			Log.e(LOG_TAG, "", e);
+		} catch (SAXException e) {
+			Log.e(LOG_TAG, "", e);
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {
 				}
-				group.addSymbol(name);
+			} else {
+				loadFromFile_1(context);
+				load_1(context);
 			}
 		}
 	}
 
-	public void loadFromFile(Context context) {
-		loadFromFile_1(context);
-		load_1(context);
-	}
-
 	public void load(Bundle savedInstanceState) {
-		if (savedInstanceState != null && savedInstanceState.containsKey(PARCELABLE_DATA)) {
-			Collections.addAll(mGroups, (Group[]) savedInstanceState.getParcelableArray(PARCELABLE_DATA));
+		if (savedInstanceState != null && savedInstanceState.containsKey(SERIALIZABLE_DATA)) {
+			Collections.addAll(mGroups, (Group[]) savedInstanceState.getSerializable(SERIALIZABLE_DATA));
 		}
 	}
 
 	public void save(Bundle outState) {
-		outState.putParcelableArray(PARCELABLE_DATA, mGroups.toArray(new Group[mGroups.size()]));
+		outState.putSerializable(SERIALIZABLE_DATA, mGroups.toArray(new Group[mGroups.size()]));
 	}
 
 	public void saveToFile(Context context) {
@@ -222,5 +195,78 @@ public class DataController {
 			return true;
 		}
 		return false;
+	}
+
+	public void loadFromFile_1(Context context) {
+		Editor prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE).edit();
+		prefs.clear();
+		FileInputStream in = null;
+		try {
+			if (isExternalStorageReadable()) {
+				try {
+					File dir = context.getExternalFilesDir("data");
+					if (!dir.exists() && !dir.mkdirs()) {
+						Log.e(LOG_TAG, "Failed to create directory");
+					}
+					File file = new File(dir, "symbols.data");
+					if (file != null && file.exists()) {
+						in = new FileInputStream(file);
+					}
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "", e);
+				}
+			}
+			if (in == null) {
+				in = context.openFileInput("symbols.data");
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] keyVal = line.split("<=>");
+				if (keyVal.length > 1) {
+					if (keyVal[0].contains("count")) {
+						try {
+							prefs.putInt(keyVal[0], Integer.parseInt(keyVal[1]));
+						} catch (NumberFormatException e) {
+							Log.e(LOG_TAG, "", e);
+						}
+					} else {
+						prefs.putString(keyVal[0], keyVal[1]);
+					}
+				}
+			}
+			prefs.commit();
+		} catch (FileNotFoundException e) {
+			Log.e(LOG_TAG, "", e);
+		} catch (IOException e) {
+			Log.e(LOG_TAG, "", e);
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+	}
+
+	public void load_1(Context context) {
+		mGroups.clear();
+		final SharedPreferences prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+		final int groupCount = prefs.getInt("count", 0);
+		for (int i = 0; i < groupCount; i++) {
+			String groupName = prefs.getString("group:" + i + ":name", "Group");
+			Group group = new Group(groupName);
+			mGroups.add(group);
+			int symbolCount = prefs.getInt("group:" + i + ":count", 0);
+			for (int j = 0; j < symbolCount; j++) {
+				String name = prefs.getString("group:" + i + ":" + j + "name", "");
+				if (name.equals("")) {
+					name = prefs.getString("group:" + i + ":" + j + ":name", "");
+				}
+				group.addSymbol(name);
+			}
+		}
 	}
 }

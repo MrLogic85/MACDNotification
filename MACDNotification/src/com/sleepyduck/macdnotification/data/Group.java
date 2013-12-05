@@ -1,51 +1,30 @@
 package com.sleepyduck.macdnotification.data;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import android.os.Parcel;
-import android.os.Parcelable;
 
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
 import com.sleepyduck.macdnotification.data.xml.XMLParsableAdaptor;
 
-public class Group extends XMLParsableAdaptor implements Parcelable {
+public class Group extends XMLParsableAdaptor {
 	private static final long serialVersionUID = 614420628326821169L;
-
-	public static final Parcelable.Creator<Group> CREATOR = new Parcelable.Creator<Group>() {
-		@Override
-		public Group createFromParcel(Parcel in) {
-			return new Group(in);
-		}
-
-		@Override
-		public Group[] newArray(int size) {
-			return new Group[size];
-		}
-	};
 
 	private String mName = "";
 	private List<Symbol> mSymbols = new ArrayList<Symbol>();
-
-	public Group(Parcel in) {
-		mName = in.readString();
-		Collections.addAll(mSymbols, (Symbol[]) in.readParcelableArray(Symbol.class.getClassLoader()));
-	}
 
 	public Group(String name) {
 		mName = name;
 	}
 
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeString(mName);
-		dest.writeParcelableArray(mSymbols.toArray(new Symbol[mSymbols.size()]), flags);
+	public Group(XMLElement element) {
+		mName = element.getAttribute("name", "");
+		XMLElement symbols = element.getElement("Symbols");
+		if (symbols != null) {
+			for (XMLElement xmlSymbol : symbols.getChildren()) {
+				Symbol symbol = new Symbol(xmlSymbol);
+				mSymbols.add(symbol);
+			}
+		}
 	}
 
 	@Override

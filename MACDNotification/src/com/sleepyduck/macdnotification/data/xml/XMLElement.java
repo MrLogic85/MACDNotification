@@ -137,6 +137,13 @@ public class XMLElement implements Serializable {
 		return null;
 	}
 
+	public String getAttribute(String name, String defaultName) {
+		for (final Attribute a : mAttributes)
+			if (a.Name.equals(name))
+				return a.Value;
+		return defaultName;
+	}
+
 	/**
 	 * Return the {@link Attribute#Name} at index i
 	 * 
