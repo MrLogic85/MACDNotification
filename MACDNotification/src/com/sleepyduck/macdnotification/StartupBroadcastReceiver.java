@@ -20,6 +20,7 @@ import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class StartupBroadcastReceiver extends BroadcastReceiver {
+	public static final int ALARM_HOUR = 8;
 	private static final String LOG_TAG = StartupBroadcastReceiver.class.getSimpleName();
 	private Context mContext;
 	private int mIdCounter = 0;
@@ -50,7 +51,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 					boolean running = true;
 					while (running && startTime + 3 * 60 * 60 * 1000 > System.currentTimeMillis()) {
 						try {
-							Thread.sleep(60*1000);
+							Thread.sleep(60 * 1000);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -87,9 +88,9 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 
 	private void setNewAlarm() {
 		final Calendar cal = Calendar.getInstance();
-		if (cal.get(Calendar.HOUR_OF_DAY) > 7)
+		if (cal.get(Calendar.HOUR_OF_DAY) > ALARM_HOUR - 1)
 			cal.add(Calendar.DATE, 1);
-		cal.set(Calendar.HOUR_OF_DAY, 8);
+		cal.set(Calendar.HOUR_OF_DAY, ALARM_HOUR);
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.SECOND, 0);
 
@@ -98,9 +99,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 			cal.add(Calendar.DATE, 2);
 
 		Log.d(LOG_TAG,
-				"Alarm set to " + String.format("%04d-%02d-%02d %02d:%02d", cal.get(Calendar.YEAR),
-						cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
-						cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)));
+				"Alarm set to "
+						+ String.format("%04d-%02d-%02d %02d:%02d", cal.get(Calendar.YEAR),
+								cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+								cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)));
 
 		final Intent intentAlarm = new Intent(mContext, StartupBroadcastReceiver.class);
 		final AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);

@@ -94,6 +94,7 @@ public class CalculateMACD {
 			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
 			symbol.setValue(closeData.get(closeData.size() - 1));
 			symbol.setValueOld(closeData.get(closeData.size() - 2));
+			symbol.setDataTime(System.currentTimeMillis());
 			return true;
 		} else if (closeData.size() > 0) {
 			String message = "Not enough data for " + symbol2 + ", only " + closeData.size() + " values found";
@@ -163,7 +164,7 @@ public class CalculateMACD {
 		} catch (final Exception e) {
 			Log.e(LOG_TAG, "", e);
 			publishProgress("Failed to parse data from Yahoo: " + e.getMessage());
-			publishProgress("Data: " + closeData);
+			publishProgress("Data: " + uriData);
 			return null;
 		}
 		return closeData;

@@ -21,6 +21,7 @@ import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.Symbol;
+import com.sleepyduck.macdnotification.util.CollectionUtil;
 
 public class ActivityMACD extends Activity {
 	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
@@ -99,6 +100,12 @@ public class ActivityMACD extends Activity {
 			for (Group group : mDataController.getGroups()) {
 				dataList.addAll(group.getSymbols());
 			}
+			dataList = CollectionUtil.filter(dataList, new CollectionUtil.Filter<Symbol>() {
+				@Override
+				public boolean filter(Symbol symbol) {
+					return symbol.isNewDataDay(System.currentTimeMillis());
+				}
+			});
 			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
 		} else {
 			mDataController.load(savedInstanceState);
