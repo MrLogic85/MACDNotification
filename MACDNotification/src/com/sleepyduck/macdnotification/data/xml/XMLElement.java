@@ -58,9 +58,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Internal {@link #toString()} used to create the XML String output.
-	 * 
-	 * @param ident
-	 * @return
 	 */
 	private String toString(final String ident) {
 		String str = ident + "<" + mName + "";
@@ -84,8 +81,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Adds all the {@link XMLElement XMLElements} in the list as children of this XMLElement
-	 * 
-	 * @param elems
 	 */
 	public void addAllChildren(final List<XMLElement> elems) {
 		mChildren.addAll(elems);
@@ -95,9 +90,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Adds a {@link Attribute}
-	 * 
-	 * @param name
-	 * @param value
 	 */
 	public void addAttribute(final String name, final String value) {
 		mAttributes.add(new Attribute(name, value));
@@ -105,8 +97,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Adds the {@link XMLElement} to the the end of the child list
-	 * 
-	 * @param el
 	 */
 	public XMLElement addChild(final XMLElement el) {
 		mChildren.add(el);
@@ -116,9 +106,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the {@link Attribute} at index i
-	 * 
-	 * @param i
-	 * @return
 	 */
 	public Attribute getAttribute(final int i) {
 		return mAttributes.get(i);
@@ -126,9 +113,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the {@link Attribute#Value} of the {@link Attribute} with the supplied {@link Attribute#Name}
-	 * 
-	 * @param name
-	 * @return
 	 */
 	public String getAttribute(final String name) {
 		for (final Attribute a : mAttributes)
@@ -146,9 +130,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Return the {@link Attribute#Name} at index i
-	 * 
-	 * @param i
-	 * @return
 	 */
 	public String getAttributeName(final int i) {
 		return mAttributes.get(i).Name;
@@ -156,9 +137,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the {@link Attribute#Value} at index i
-	 * 
-	 * @param i
-	 * @return
 	 */
 	public String getAttributeValue(final int i) {
 		return mAttributes.get(i).Value;
@@ -166,8 +144,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns all children
-	 * 
-	 * @return
 	 */
 	public List<XMLElement> getChildren() {
 		return mChildren;
@@ -175,8 +151,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the data
-	 * 
-	 * @return
 	 */
 	public String getData() {
 		return mData;
@@ -184,9 +158,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the first occurrence of a {@link XMLElement} with the given name, searches depth first.
-	 * 
-	 * @param name
-	 * @return
 	 */
 	public XMLElement getElement(final String name) {
 		if (mName.equals(name))
@@ -201,11 +172,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the first occurrence of a {@link XMLElement} with the given element name and attribute name-value pair, searches depth first.
-	 * 
-	 * @param elementName
-	 * @param attributeName
-	 * @param attributeValue
-	 * @return
 	 */
 	public XMLElement getElement(final String elementName, final String attributeName, final String attributeValue) {
 		if (mName.equals(elementName) && getAttribute(attributeName) != null
@@ -222,8 +188,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the name of this element
-	 * 
-	 * @return
 	 */
 	public String getName() {
 		return mName;
@@ -231,8 +195,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns the parent {@link XMLElement}
-	 * 
-	 * @return
 	 */
 	public XMLElement getParent() {
 		return mParent;
@@ -240,8 +202,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Sets the data of this element
-	 * 
-	 * @param data
 	 */
 	public void setData(final String data) {
 		this.mData = data;
@@ -249,9 +209,6 @@ public class XMLElement implements Serializable {
 
 	/**
 	 * Returns a XML String
-	 * 
-	 * @param ident
-	 * @return
 	 */
 	@Override
 	public String toString() {

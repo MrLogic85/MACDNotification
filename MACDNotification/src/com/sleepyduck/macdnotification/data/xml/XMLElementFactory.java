@@ -26,9 +26,7 @@ public class XMLElementFactory implements Serializable {
 
 	/**
 	 * Builds a XMLElement structure from a XML String using a {@link SAXParser}
-	 * 
-	 * @param xmlString
-	 * @return
+	 *
 	 * @throws ParserConfigurationException
 	 * @throws SAXException
 	 * @throws IOException
@@ -70,9 +68,7 @@ public class XMLElementFactory implements Serializable {
 
 	/**
 	 * Builds a XMLElement structure from a XML String using a {@link SAXParser}
-	 * 
-	 * @param xmlString
-	 * @return
+	 *
 	 * @throws ParserConfigurationException
 	 * @throws SAXException
 	 * @throws IOException
@@ -91,8 +87,6 @@ public class XMLElementFactory implements Serializable {
 
 	/**
 	 * Creates a {@link XMLElement} representation of the {@link IXMLParsable} object
-	 * 
-	 * @return
 	 */
 	public XMLElement toXMLElement() {
 		final XMLElement element = new XMLElement(mRegisteredXMLObject.getClass().getSimpleName());
@@ -101,7 +95,7 @@ public class XMLElementFactory implements Serializable {
 	}
 
 	/**
-	 * @return the XML String representation from {@link XMLElement#toXMLString()}
+	 * @return a XML String
 	 */
 	public String toXMLString() {
 		return toXMLElement().toString();

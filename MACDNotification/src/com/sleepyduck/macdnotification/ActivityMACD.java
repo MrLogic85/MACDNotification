@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -21,9 +22,10 @@ import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.Symbol;
-import com.sleepyduck.macdnotification.util.CollectionUtil;
 
 public class ActivityMACD extends Activity {
+    private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
+
 	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
 	public static final String DATA_REMOVED_SYMBOL = "removed_symbol";
 
@@ -50,11 +52,11 @@ public class ActivityMACD extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			if (intent.hasExtra(DATA_REMOVED_SYMBOL)) {
-				Symbol symbol = intent.getParcelableExtra(DATA_REMOVED_SYMBOL);
+				Symbol symbol = (Symbol) intent.getSerializableExtra(DATA_REMOVED_SYMBOL);
 				if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
 					onNewSymbolClicked(null);
 				}
-				if (mNameEditText != null) {
+				if (symbol != null && mNameEditText != null) {
 					mNameEditText.setText(symbol.getName());
 					mNameEditText.requestFocus();
 				}
@@ -100,13 +102,7 @@ public class ActivityMACD extends Activity {
 			for (Group group : mDataController.getGroups()) {
 				dataList.addAll(group.getSymbols());
 			}
-			dataList = CollectionUtil.filter(dataList, new CollectionUtil.Filter<Symbol>() {
-				@Override
-				public boolean filter(Symbol symbol) {
-					return symbol.isNewDataDay(System.currentTimeMillis());
-				}
-			});
-			new CalculateMACD(this, mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
+			new CalculateMACD(mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
 		} else {
 			mDataController.load(savedInstanceState);
 		}
@@ -126,8 +122,12 @@ public class ActivityMACD extends Activity {
 	@Override
 	public void onStop() {
 		super.onStop();
+        try {
 		unregisterReceiver(mReceiver);
-		mDataController.saveToFile(this);
+        } catch (IllegalArgumentException e) {
+            Log.e(LOG_TAG, "", e);
+        }
+		mDataController.saveToFile();
 	}
 
 	public void onAddSymbolClicked(final View view) {
@@ -139,7 +139,7 @@ public class ActivityMACD extends Activity {
 					&& !mNameEditText.getText().toString().equals("")) {
 				String symbolName = mNameEditText.getText().toString();
 				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName);
-				new CalculateMACD(this, mMACDListener).execute(symbol);
+				new CalculateMACD(mMACDListener).execute(symbol);
 			}
 		} else {
 			// Add group
