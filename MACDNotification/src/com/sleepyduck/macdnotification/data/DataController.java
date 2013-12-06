@@ -26,6 +26,7 @@ import android.util.Log;
 
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
 import com.sleepyduck.macdnotification.data.xml.XMLElementFactory;
+import com.sleepyduck.macdnotification.util.CollectionUtil;
 
 public class DataController {
 	private static final String LOG_TAG = DataController.class.getSimpleName();
@@ -33,16 +34,20 @@ public class DataController {
 
 	private final List<Group> mGroups = Collections.synchronizedList(new ArrayList<Group>());
 
-    public Group getGroup(int i) {
+	public Group getGroup(int i) {
 		if (mGroups.size() > i) {
 			return mGroups.get(i);
 		}
 		return null;
 	}
 
-	public int getGroupIndex(String group) {
-        //TODO Use CollectionUtils
-		return mGroups.indexOf(new Group(group));
+	public int getGroupIndex(final String groupName) {
+		return CollectionUtil.indexOf(mGroups, new CollectionUtil.Filter<Group>() {
+			@Override
+			public boolean filter(Group group) {
+				return group.getName().equals(groupName);
+			}
+		});
 	}
 
 	public List<Group> getGroups() {
@@ -103,7 +108,7 @@ public class DataController {
 				try {
 					in.close();
 				} catch (IOException e) {
-                    Log.e(LOG_TAG, "", e);
+					Log.e(LOG_TAG, "", e);
 				}
 			} else {
 				loadFromFile_1(context);
@@ -123,37 +128,37 @@ public class DataController {
 	}
 
 	public void saveToFile() {
-        if (isExternalStorageWritable()) {
-		FileOutputStream fileOut = null;
-		OutputStreamWriter writer = null;
-		try {
-                File file = getExternalStorageFile();
-                fileOut = new FileOutputStream(file);
-                writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
-                XMLElement base = new XMLElement("Groups");
-                for (Group mGroup : mGroups) {
-                    base.addChild(mGroup.toXMLElement());
-                }
-                writer.write(base.toString());
-                writer.flush();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		if (fileOut != null) {
+		if (isExternalStorageWritable()) {
+			FileOutputStream fileOut = null;
+			OutputStreamWriter writer = null;
 			try {
-				fileOut.close();
-			} catch (IOException e) {
+				File file = getExternalStorageFile();
+				fileOut = new FileOutputStream(file);
+				writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+				XMLElement base = new XMLElement("Groups");
+				for (Group mGroup : mGroups) {
+					base.addChild(mGroup.toXMLElement());
+				}
+				writer.write(base.toString());
+				writer.flush();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		}
-		if (writer != null) {
-			try {
-				writer.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+			if (fileOut != null) {
+				try {
+					fileOut.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
-        }
 	}
 
 	public File getExternalStorageFile() throws IOException {
@@ -167,15 +172,15 @@ public class DataController {
 	/* Checks if external storage is available for read and write */
 	public boolean isExternalStorageWritable() {
 		String state = Environment.getExternalStorageState();
-        return Environment.MEDIA_MOUNTED.equals(state);
-    }
+		return Environment.MEDIA_MOUNTED.equals(state);
+	}
 
 	/* Checks if external storage is available to at least read */
 	public boolean isExternalStorageReadable() {
 		String state = Environment.getExternalStorageState();
-        return Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
-    }
+		return Environment.MEDIA_MOUNTED.equals(state) ||
+				Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
+	}
 
 	public void loadFromFile_1(Context context) {
 		Editor prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE).edit();
@@ -226,7 +231,7 @@ public class DataController {
 				try {
 					in.close();
 				} catch (IOException e) {
-                    Log.e(LOG_TAG, "", e);
+					Log.e(LOG_TAG, "", e);
 				}
 			}
 		}

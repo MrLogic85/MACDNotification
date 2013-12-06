@@ -9,7 +9,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -84,26 +83,26 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				}
 			});
 
-            if (symbol != null) {
-                symbolText.setText(symbol.getName());
-                if (symbol.getMACD() > -99999f) {
-                    String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-                            symbol.getValue(),
-                            symbol.getValueOld(),
-                            symbol.getMACD(),
-                            symbol.getMACDOld());
-                    dataText.setText(text);
+			if (symbol != null) {
+				symbolText.setText(symbol.getName());
+				if (symbol.getMACD() > -99999f) {
+					String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+							symbol.getValue(),
+							symbol.getValueOld(),
+							symbol.getMACD(),
+							symbol.getMACDOld());
+					dataText.setText(text);
 
-                    if (symbol.getMACD() >= 0f) {
-                        symbolText.setTextColor(Color.GREEN);
-                    } else {
-                        symbolText.setTextColor(Color.RED);
-                    }
-                } else {
-                    dataText.setText("");
-                    symbolText.setTextColor(Color.WHITE);
-                }
-            }
+					if (symbol.getMACD() >= 0f) {
+						symbolText.setTextColor(Color.GREEN);
+					} else {
+						symbolText.setTextColor(Color.RED);
+					}
+				} else {
+					dataText.setText("");
+					symbolText.setTextColor(Color.WHITE);
+				}
+			}
 			return convertView;
 		}
 		return null;
@@ -153,45 +152,45 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		groupView = groupView != null ? groupView : inflater.inflate(R.layout.list_group_item, null);
 
-        if (group != null) {
-            TextView item;
-            if (groupView != null) {
-                item = (TextView) groupView.findViewById(R.id.textViewGroupName);
-                if (item != null) {
-                    item.setTypeface(null, Typeface.BOLD);
-                    item.setText(group.getName());
-                }
-            }
-        }
+		if (group != null) {
+			TextView item;
+			if (groupView != null) {
+				item = (TextView) groupView.findViewById(R.id.textViewGroupName);
+				if (item != null) {
+					item.setTypeface(null, Typeface.BOLD);
+					item.setText(group.getName());
+				}
+			}
+		}
 
-        if (groupView != null) {
-            ImageView deleteGroup = (ImageView) groupView.findViewById(R.id.imageViewDeleteGroup);
-            deleteGroup.setOnClickListener(new OnClickListener() {
+		if (groupView != null) {
+			ImageView deleteGroup = (ImageView) groupView.findViewById(R.id.imageViewDeleteGroup);
+			deleteGroup.setOnClickListener(new OnClickListener() {
 
-                @Override
-                public void onClick(View v) {
-                    new AlertDialog.Builder(mContext)
-                    .setMessage(R.string.ask_delete_group)
-                    .setCancelable(false)
-                    .setPositiveButton(android.R.string.yes,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int id) {
-                                    removeGroup(groupPosition);
-                                }
-                            })
-                    .setNegativeButton(android.R.string.no,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int id) {
-                                    dialog.cancel();
-                                }
-                            })
-                    .create()
-                    .show();
-                }
-            });
-        }
+				@Override
+				public void onClick(View v) {
+					new AlertDialog.Builder(mContext)
+					.setMessage(R.string.ask_delete_group)
+					.setCancelable(false)
+					.setPositiveButton(android.R.string.yes,
+							new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int id) {
+							removeGroup(groupPosition);
+						}
+					})
+					.setNegativeButton(android.R.string.no,
+							new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int id) {
+							dialog.cancel();
+						}
+					})
+					.create()
+					.show();
+				}
+			});
+		}
 		return groupView;
 	}
 
