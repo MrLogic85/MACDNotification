@@ -114,11 +114,6 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		if (symbol.getMACD() <= -1f)
 			return;
 
-		final NotificationManager notificationManager = (NotificationManager) mContext
-				.getSystemService(Context.NOTIFICATION_SERVICE);
-		final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
-		builder.setContentTitle("MACD Notification");
-
 		String buyOrSell;
 		if (symbol.getMACD() >= 0)
 			if (symbol.getMACD() * symbol.getMACDOld() > 0)
@@ -142,8 +137,13 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 			return;
 		}
 
+		final NotificationManager notificationManager = (NotificationManager) mContext
+				.getSystemService(Context.NOTIFICATION_SERVICE);
+		final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
+		builder.setContentTitle("MACD Notification");
+
 		builder.setContentText(buyOrSell + " " + symbol.getName());
-		builder.setSmallIcon(R.drawable.ic_launcher);
+		builder.setSmallIcon(R.drawable.ic_launcher_small);
 		final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),
 				PendingIntent.FLAG_UPDATE_CURRENT);
 		builder.setFullScreenIntent(intent, true);

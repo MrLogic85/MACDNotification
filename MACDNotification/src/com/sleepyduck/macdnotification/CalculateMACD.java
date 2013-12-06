@@ -162,8 +162,7 @@ public class CalculateMACD {
 			});
 		} catch (final Exception e) {
 			Log.e(LOG_TAG, "", e);
-			publishProgress("Failed to parse data from Yahoo: " + e.getMessage());
-			publishProgress("Data: " + uriData);
+			Log.e(LOG_TAG, "Data: " + uriData);
 			return null;
 		}
 		return closeData;
