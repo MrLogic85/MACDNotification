@@ -114,7 +114,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		Symbol symbol = group.removeSymbol(childPosition);
 		notifyDataSetChanged();
 		Intent intent = new Intent(ActivityMACD.ACTION_BROADCAST_REMOVE);
-		intent.putExtra(ActivityMACD.DATA_REMOVED_SYMBOL, (Parcelable) symbol);
+		intent.putExtra(ActivityMACD.DATA_REMOVED_SYMBOL, symbol);
 		mContext.sendBroadcast(intent);
 	}
 

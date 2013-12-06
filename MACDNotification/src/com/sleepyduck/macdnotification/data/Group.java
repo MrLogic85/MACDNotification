@@ -35,7 +35,12 @@ public class Group extends XMLParsableAdaptor {
 		return super.equals(other);
 	}
 
-	@Override
+    @Override
+    public int hashCode() {
+        return mName.hashCode();
+    }
+
+    @Override
 	public String toString() {
 		return mName;
 	}
