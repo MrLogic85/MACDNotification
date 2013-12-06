@@ -33,25 +33,7 @@ public class DataController {
 
 	private final List<Group> mGroups = Collections.synchronizedList(new ArrayList<Group>());
 
-	public Symbol getSymbol(String groupName, String symbolName, String data) {
-		int groupIndex = getGroupIndex(groupName);
-		if (groupIndex > -1) {
-			if (mGroups.get(groupIndex).getName().equals(groupName)) {
-				return mGroups.get(groupIndex).getSymbol(symbolName);
-			}
-		}
-		return null;
-	}
-
-	public Symbol getSymbol(String group, int symbol) {
-		int groupIndex = getGroupIndex(group);
-		if (groupIndex > -1) {
-			return mGroups.get(groupIndex).getSymbol(symbol);
-		}
-		return null;
-	}
-
-	public Group getGroup(int i) {
+    public Group getGroup(int i) {
 		if (mGroups.size() > i) {
 			return mGroups.get(i);
 		}
@@ -59,7 +41,8 @@ public class DataController {
 	}
 
 	public int getGroupIndex(String group) {
-		return mGroups.indexOf(group);
+        //TODO Use CollectionUtils
+		return mGroups.indexOf(new Group(group));
 	}
 
 	public List<Group> getGroups() {
@@ -92,7 +75,7 @@ public class DataController {
 		FileInputStream in = null;
 		try {
 			if (isExternalStorageReadable()) {
-				File file = getExternalStorageFile(context);
+				File file = getExternalStorageFile();
 				if (file != null && file.exists()) {
 					in = new FileInputStream(file);
 					List<XMLElement> roots = XMLElementFactory.BuildFromReader(new InputStreamReader(in));
@@ -120,6 +103,7 @@ public class DataController {
 				try {
 					in.close();
 				} catch (IOException e) {
+                    Log.e(LOG_TAG, "", e);
 				}
 			} else {
 				loadFromFile_1(context);
@@ -138,19 +122,20 @@ public class DataController {
 		outState.putSerializable(SERIALIZABLE_DATA, mGroups.toArray(new Group[mGroups.size()]));
 	}
 
-	public void saveToFile(Context context) {
+	public void saveToFile() {
+        if (isExternalStorageWritable()) {
 		FileOutputStream fileOut = null;
 		OutputStreamWriter writer = null;
 		try {
-			File file = getExternalStorageFile(context);
-			fileOut = new FileOutputStream(file);
-			writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
-			XMLElement base = new XMLElement("Groups");
-			for (int i = 0; i < mGroups.size(); ++i) {
-				base.addChild(mGroups.get(i).toXMLElement());
-			}
-			writer.write(base.toString());
-			writer.flush();
+                File file = getExternalStorageFile();
+                fileOut = new FileOutputStream(file);
+                writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+                XMLElement base = new XMLElement("Groups");
+                for (Group mGroup : mGroups) {
+                    base.addChild(mGroup.toXMLElement());
+                }
+                writer.write(base.toString());
+                writer.flush();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -168,9 +153,10 @@ public class DataController {
 				e.printStackTrace();
 			}
 		}
+        }
 	}
 
-	public File getExternalStorageFile(Context context) throws IOException {
+	public File getExternalStorageFile() throws IOException {
 		File dir = new File(Environment.getExternalStorageDirectory(), "MACDNotification");
 		if (!dir.exists() && !dir.mkdirs()) {
 			Log.e(LOG_TAG, "Failed to create directory");
@@ -181,21 +167,15 @@ public class DataController {
 	/* Checks if external storage is available for read and write */
 	public boolean isExternalStorageWritable() {
 		String state = Environment.getExternalStorageState();
-		if (Environment.MEDIA_MOUNTED.equals(state)) {
-			return true;
-		}
-		return false;
-	}
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
 
 	/* Checks if external storage is available to at least read */
 	public boolean isExternalStorageReadable() {
 		String state = Environment.getExternalStorageState();
-		if (Environment.MEDIA_MOUNTED.equals(state) ||
-				Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-			return true;
-		}
-		return false;
-	}
+        return Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
+    }
 
 	public void loadFromFile_1(Context context) {
 		Editor prefs = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE).edit();
@@ -205,11 +185,11 @@ public class DataController {
 			if (isExternalStorageReadable()) {
 				try {
 					File dir = context.getExternalFilesDir("data");
-					if (!dir.exists() && !dir.mkdirs()) {
+					if (dir == null || (!dir.exists() && !dir.mkdirs())) {
 						Log.e(LOG_TAG, "Failed to create directory");
 					}
 					File file = new File(dir, "symbols.data");
-					if (file != null && file.exists()) {
+					if (file.exists()) {
 						in = new FileInputStream(file);
 					}
 				} catch (IOException e) {
@@ -246,6 +226,7 @@ public class DataController {
 				try {
 					in.close();
 				} catch (IOException e) {
+                    Log.e(LOG_TAG, "", e);
 				}
 			}
 		}

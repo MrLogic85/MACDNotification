@@ -76,7 +76,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		DataController dataController = new DataController();
 		dataController.loadFromFile(context);
 		List<Symbol> dataList = dataController.getAllSymbols();
-		new CalculateMACD(context, listener).execute(dataList.toArray(new Symbol[dataList.size()]));
+		new CalculateMACD(listener).execute(dataList.toArray(new Symbol[dataList.size()]));
 	}
 
 	private boolean checkInternetConnection() {
@@ -119,7 +119,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
 		builder.setContentTitle("MACD Notification");
 
-		String buyOrSell = "";
+		String buyOrSell;
 		if (symbol.getMACD() >= 0)
 			if (symbol.getMACD() * symbol.getMACDOld() > 0)
 				buyOrSell = "Keep";

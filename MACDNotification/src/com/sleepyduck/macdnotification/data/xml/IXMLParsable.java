@@ -9,17 +9,13 @@ package com.sleepyduck.macdnotification.data.xml;
 public interface IXMLParsable {
 
 	/**
-	 * Writes the attributes of the Message into a XMLStremWriter
-	 * 
-	 * @param out
-	 *            the XMLStreamWriter to write the attributes to
+	 * Put the attributes of the IXMLParsable into the element. XMLElement children can also be
+     * added to the element.
 	 */
 	public abstract void putAttributes(final XMLElement element);
 
 	/**
 	 * Creates a XMLElement representation of this message
-	 * 
-	 * @return
 	 */
 	public abstract XMLElement toXMLElement();
 

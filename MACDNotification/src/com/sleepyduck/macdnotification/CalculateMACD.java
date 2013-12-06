@@ -24,7 +24,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
@@ -37,7 +36,7 @@ public class CalculateMACD {
 	private MACDListener mListener = null;
 	private Handler mHandler;
 
-	public CalculateMACD(final Context context, MACDListener listener) {
+	public CalculateMACD(MACDListener listener) {
 		mListener = listener;
 		mHandler = new Handler();
 	}

@@ -29,8 +29,8 @@ public class Group extends XMLParsableAdaptor {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof String) {
-			return mName.equals(other);
+		if (other instanceof Group) {
+			return mName.equals(((Group) other).getName());
 		}
 		return super.equals(other);
 	}
@@ -45,25 +45,16 @@ public class Group extends XMLParsableAdaptor {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
 		XMLElement symbols = element.addChild(new XMLElement("Symbols"));
-		for (int i = 0; i < mSymbols.size(); ++i) {
-			symbols.addChild(mSymbols.get(i).toXMLElement());
-		}
+        for (Symbol mSymbol : mSymbols) {
+            symbols.addChild(mSymbol.toXMLElement());
+        }
 	}
 
 	public String getName() {
 		return mName;
 	}
 
-	public Symbol getSymbol(String symbolName) {
-		for (Symbol symbol : mSymbols) {
-			if (symbol.getName().equals(symbolName)) {
-				return symbol;
-			}
-		}
-		return null;
-	}
-
-	public Symbol getSymbol(int i) {
+    public Symbol getSymbol(int i) {
 		if (mSymbols.size() > i)
 			return mSymbols.get(i);
 		return null;

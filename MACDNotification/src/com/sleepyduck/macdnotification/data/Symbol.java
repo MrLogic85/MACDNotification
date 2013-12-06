@@ -10,10 +10,10 @@ public class Symbol extends XMLParsableAdaptor {
 	private static final long serialVersionUID = -2937633173541304552L;
 
 	private String mName = "";
-	private Float mValue = -1F;
-	private Float mValueOld = -1F;
-	private Float mMACD = -1F;
-	private Float mMACDOld = -1F;
+	private Float mValue = -99999F;
+	private Float mValueOld = -99999F;
+	private Float mMACD = -99999F;
+	private Float mMACDOld = -99999F;
 	private long mDataTime = 0L;
 
 	public Symbol(String name) {
@@ -22,10 +22,10 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public Symbol(XMLElement element) {
 		mName = element.getAttribute("name", "");
-		mValue = Float.valueOf(element.getAttribute("value", "-1"));
-		mValueOld = Float.valueOf(element.getAttribute("valueOld", "-1"));
-		mMACD = Float.valueOf(element.getAttribute("macd", "-1"));
-		mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-1"));
+		mValue = Float.valueOf(element.getAttribute("value", "-99999"));
+		mValueOld = Float.valueOf(element.getAttribute("valueOld", "-99999"));
+		mMACD = Float.valueOf(element.getAttribute("macd", "-99999"));
+		mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-99999"));
 		mDataTime = Long.valueOf(element.getAttribute("dataTime", "0"));
 	}
 
@@ -115,7 +115,7 @@ public class Symbol extends XMLParsableAdaptor {
 				return newDay > dataDay;
 			}
 		} else {
-			return dataYear > dataYear;
+			return newYear > dataYear;
 		}
 	}
 }
