@@ -1,6 +1,7 @@
 package com.sleepyduck.macdnotification;
 
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 
 import android.app.AlarmManager;
@@ -75,7 +76,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	private void calculateMACDs(Context context) {
 		DataController dataController = new DataController();
 		dataController.loadFromFile(context);
-		List<Symbol> dataList = dataController.getAllSymbols();
+		List<Symbol> dataList = new LinkedList<Symbol>();
+		for (Symbol symbol : dataController.getAllSymbols()) {
+			symbol.populateList(dataList);
+		}
 		new CalculateMACD(listener).execute(dataList.toArray(new Symbol[dataList.size()]));
 	}
 

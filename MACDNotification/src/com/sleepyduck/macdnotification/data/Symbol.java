@@ -1,6 +1,7 @@
 package com.sleepyduck.macdnotification.data;
 
 import java.util.Calendar;
+import java.util.List;
 
 import com.sleepyduck.macdnotification.StartupBroadcastReceiver;
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
@@ -22,11 +23,11 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public Symbol(XMLElement element) {
 		mName = element.getAttribute("name", "");
-		mValue = Float.valueOf(element.getAttribute("value", "-99999"));
-		mValueOld = Float.valueOf(element.getAttribute("valueOld", "-99999"));
-		mMACD = Float.valueOf(element.getAttribute("macd", "-99999"));
-		mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-99999"));
-		mDataTime = Long.valueOf(element.getAttribute("dataTime", "0"));
+		//mValue = Float.valueOf(element.getAttribute("value", "-99999"));
+		//mValueOld = Float.valueOf(element.getAttribute("valueOld", "-99999"));
+		//mMACD = Float.valueOf(element.getAttribute("macd", "-99999"));
+		//mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-99999"));
+		//mDataTime = Long.valueOf(element.getAttribute("dataTime", "0"));
 	}
 
 	@Override
@@ -46,11 +47,15 @@ public class Symbol extends XMLParsableAdaptor {
 	public void putAttributes(XMLElement element) {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
-		element.addAttribute("value", String.valueOf(mValue));
-		element.addAttribute("valueOld", String.valueOf(mValueOld));
-		element.addAttribute("macd", String.valueOf(mMACD));
-		element.addAttribute("macdOld", String.valueOf(mMACDOld));
-		element.addAttribute("dataTime", String.valueOf(mDataTime));
+		//element.addAttribute("value", String.valueOf(mValue));
+		//element.addAttribute("valueOld", String.valueOf(mValueOld));
+		//element.addAttribute("macd", String.valueOf(mMACD));
+		//element.addAttribute("macdOld", String.valueOf(mMACDOld));
+		//element.addAttribute("dataTime", String.valueOf(mDataTime));
+	}
+
+	public void populateList(List<Symbol> list) {
+		list.add(this);
 	}
 
 	public String getName() {
@@ -91,6 +96,18 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public float getMACDOld() {
 		return mMACDOld;
+	}
+
+	public CharSequence getDataText() {
+		if (mMACD > -99999f) {
+			String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+					mValue,
+					mValueOld,
+					mMACD,
+					mMACDOld);
+			return text;
+		}
+		return "";
 	}
 
 	public boolean isNewDataDay(long newTime) {

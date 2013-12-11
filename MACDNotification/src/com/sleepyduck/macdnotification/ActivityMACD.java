@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -24,7 +23,7 @@ import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class ActivityMACD extends Activity {
-    private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
+	private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
 
 	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
 	public static final String DATA_REMOVED_SYMBOL = "removed_symbol";
@@ -100,7 +99,9 @@ public class ActivityMACD extends Activity {
 			mDataController.loadFromFile(this);
 			List<Symbol> dataList = new LinkedList<Symbol>();
 			for (Group group : mDataController.getGroups()) {
-				dataList.addAll(group.getSymbols());
+				for (Symbol symbol : group.getSymbols()) {
+					symbol.populateList(dataList);
+				}
 			}
 			new CalculateMACD(mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
 		} else {
@@ -122,11 +123,10 @@ public class ActivityMACD extends Activity {
 	@Override
 	public void onStop() {
 		super.onStop();
-        try {
-		unregisterReceiver(mReceiver);
-        } catch (IllegalArgumentException e) {
-            Log.e(LOG_TAG, "", e);
-        }
+		try {
+			unregisterReceiver(mReceiver);
+		} catch (IllegalArgumentException e) {
+		}
 		mDataController.saveToFile();
 	}
 

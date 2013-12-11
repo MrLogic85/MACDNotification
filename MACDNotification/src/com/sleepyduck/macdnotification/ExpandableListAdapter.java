@@ -85,21 +85,14 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
 			if (symbol != null) {
 				symbolText.setText(symbol.getName());
+				dataText.setText(symbol.getDataText());
 				if (symbol.getMACD() > -99999f) {
-					String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-							symbol.getValue(),
-							symbol.getValueOld(),
-							symbol.getMACD(),
-							symbol.getMACDOld());
-					dataText.setText(text);
-
 					if (symbol.getMACD() >= 0f) {
 						symbolText.setTextColor(Color.GREEN);
 					} else {
 						symbolText.setTextColor(Color.RED);
 					}
 				} else {
-					dataText.setText("");
 					symbolText.setTextColor(Color.WHITE);
 				}
 			}

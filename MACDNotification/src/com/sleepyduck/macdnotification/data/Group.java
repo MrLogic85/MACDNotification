@@ -21,8 +21,14 @@ public class Group extends XMLParsableAdaptor {
 		XMLElement symbols = element.getElement("Symbols");
 		if (symbols != null) {
 			for (XMLElement xmlSymbol : symbols.getChildren()) {
-				Symbol symbol = new Symbol(xmlSymbol);
-				mSymbols.add(symbol);
+				String name = xmlSymbol.getName();
+				if (name.equals(Symbol.class.getSimpleName())) {
+					Symbol symbol = new Symbol(xmlSymbol);
+					mSymbols.add(symbol);
+				} else if (name.equals(Fund.class.getSimpleName())) {
+					Fund fund = new Fund(xmlSymbol);
+					mSymbols.add(fund);
+				}
 			}
 		}
 	}
@@ -35,12 +41,12 @@ public class Group extends XMLParsableAdaptor {
 		return super.equals(other);
 	}
 
-    @Override
-    public int hashCode() {
-        return mName.hashCode();
-    }
+	@Override
+	public int hashCode() {
+		return mName.hashCode();
+	}
 
-    @Override
+	@Override
 	public String toString() {
 		return mName;
 	}
@@ -50,16 +56,16 @@ public class Group extends XMLParsableAdaptor {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
 		XMLElement symbols = element.addChild(new XMLElement("Symbols"));
-        for (Symbol mSymbol : mSymbols) {
-            symbols.addChild(mSymbol.toXMLElement());
-        }
+		for (Symbol mSymbol : mSymbols) {
+			symbols.addChild(mSymbol.toXMLElement());
+		}
 	}
 
 	public String getName() {
 		return mName;
 	}
 
-    public Symbol getSymbol(int i) {
+	public Symbol getSymbol(int i) {
 		if (mSymbols.size() > i)
 			return mSymbols.get(i);
 		return null;
