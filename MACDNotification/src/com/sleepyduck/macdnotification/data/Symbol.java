@@ -1,6 +1,7 @@
 package com.sleepyduck.macdnotification.data;
 
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.sleepyduck.macdnotification.StartupBroadcastReceiver;
@@ -16,6 +17,7 @@ public class Symbol extends XMLParsableAdaptor {
 	private Float mMACD = -99999F;
 	private Float mMACDOld = -99999F;
 	private long mDataTime = 0L;
+	private int mRetryCounter = 3;
 
 	public Symbol(String name) {
 		mName = name;
@@ -56,6 +58,12 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public void populateList(List<Symbol> list) {
 		list.add(this);
+	}
+
+	public List<Symbol> asList() {
+		List<Symbol> list = new LinkedList<Symbol>();
+		populateList(list);
+		return list;
 	}
 
 	public String getName() {
@@ -99,7 +107,7 @@ public class Symbol extends XMLParsableAdaptor {
 	}
 
 	public CharSequence getDataText() {
-		if (mMACD > -99999f) {
+		if (hasValidData()) {
 			String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
 					mValue,
 					mValueOld,
@@ -134,5 +142,13 @@ public class Symbol extends XMLParsableAdaptor {
 		} else {
 			return newYear > dataYear;
 		}
+	}
+
+	public boolean hasValidData() {
+		return mMACD > -99999f;
+	}
+
+	public boolean doRetry() {
+		return mRetryCounter -- > 0;
 	}
 }

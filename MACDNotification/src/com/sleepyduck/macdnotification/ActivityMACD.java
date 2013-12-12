@@ -1,6 +1,5 @@
 package com.sleepyduck.macdnotification;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import android.app.Activity;
@@ -23,8 +22,6 @@ import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class ActivityMACD extends Activity {
-	private static final String LOG_TAG = ActivityMACD.class.getSimpleName();
-
 	public static final String ACTION_BROADCAST_REMOVE = "ActivityMACD:action_broadcast_remove";
 	public static final String DATA_REMOVED_SYMBOL = "removed_symbol";
 
@@ -33,10 +30,9 @@ public class ActivityMACD extends Activity {
 	private ArrayAdapter<Group> mSpinnerAdapter;
 	private View mAddLayout;
 	private EditText mNameEditText;
-	private DataController mDataController = new DataController();
+	private final DataController mDataController = new DataController();
 
 	private MACDListener mMACDListener = new MACDListener() {
-
 		@Override
 		public void onMessage(String message) {
 			Toast.makeText(ActivityMACD.this, message, Toast.LENGTH_LONG).show();
@@ -44,19 +40,24 @@ public class ActivityMACD extends Activity {
 
 		@Override
 		public void onCalculationComplete(Symbol symbol) {
-			mListAdapter.notifyDataSetChanged();
+			if (!symbol.hasValidData() && symbol.doRetry())
+				mMACDCalculator.execute(symbol);
+			else
+				mListAdapter.notifyDataSetChanged();
 		}
 	};
+	private final CalculateMACD mMACDCalculator = new CalculateMACD(mMACDListener);
+
 	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			if (intent.hasExtra(DATA_REMOVED_SYMBOL)) {
 				Symbol symbol = (Symbol) intent.getSerializableExtra(DATA_REMOVED_SYMBOL);
-				if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
-					onNewSymbolClicked(null);
-				}
+				mGroupSpinner.setVisibility(View.VISIBLE);
+				mAddLayout.setVisibility(View.VISIBLE);
 				if (symbol != null && mNameEditText != null) {
 					mNameEditText.setText(symbol.getName());
+					mNameEditText.setHint(R.string.symbol_name);
 					mNameEditText.requestFocus();
 				}
 			}
@@ -68,11 +69,13 @@ public class ActivityMACD extends Activity {
 		@Override
 		public boolean onChildClick(ExpandableListView expandableListView, View view, int groupIndex, int symbolIndex, long id) {
 			Symbol symbol = mDataController.getGroup(groupIndex).getSymbol(symbolIndex);
-			Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + symbol.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
-			Intent intent = new Intent(Intent.ACTION_VIEW);
-			intent.setData(uri);
-			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			startActivity(intent);
+			for (Symbol sym : symbol.asList()) {
+				Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + sym.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(uri);
+				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				startActivity(intent);
+			}
 			return true;
 		}
 	};
@@ -97,13 +100,8 @@ public class ActivityMACD extends Activity {
 
 		if (savedInstanceState == null) {
 			mDataController.loadFromFile(this);
-			List<Symbol> dataList = new LinkedList<Symbol>();
-			for (Group group : mDataController.getGroups()) {
-				for (Symbol symbol : group.getSymbols()) {
-					symbol.populateList(dataList);
-				}
-			}
-			new CalculateMACD(mMACDListener).execute(dataList.toArray(new Symbol[dataList.size()]));
+			List<Symbol> dataList = mDataController.getAllSymbols();
+			mMACDCalculator.execute(dataList.toArray(new Symbol[dataList.size()]));
 		} else {
 			mDataController.load(savedInstanceState);
 		}
@@ -121,14 +119,12 @@ public class ActivityMACD extends Activity {
 	}
 
 	@Override
-	public void onStop() {
-		super.onStop();
-		try {
-			unregisterReceiver(mReceiver);
-		} catch (IllegalArgumentException e) {
-		}
+	protected void onDestroy() {
+		super.onDestroy();
+		unregisterReceiver(mReceiver);
 		mDataController.saveToFile();
 	}
+
 
 	public void onAddSymbolClicked(final View view) {
 		mAddLayout.setVisibility(View.GONE);

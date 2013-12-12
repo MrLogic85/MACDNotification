@@ -19,7 +19,14 @@ public class Fund extends Symbol {
 		XMLElement symbols = element.getElement("Symbols");
 		if (symbols != null) {
 			for (XMLElement xmlSymbol : symbols.getChildren()) {
-				mSymbols.add(new Symbol(xmlSymbol));
+				String name = xmlSymbol.getName();
+				if (name.equals(Symbol.class.getSimpleName())) {
+					Symbol symbol = new Symbol(xmlSymbol);
+					mSymbols.add(symbol);
+				} else if (name.equals(Fund.class.getSimpleName())) {
+					Fund fund = new Fund(xmlSymbol);
+					mSymbols.add(fund);
+				}
 				mWeights.add(Float.valueOf(xmlSymbol.getAttribute("weight", "1")));
 			}
 		}
@@ -38,35 +45,45 @@ public class Fund extends Symbol {
 
 	@Override
 	public void populateList(List<Symbol> list) {
-		list.addAll(mSymbols);
+		for (Symbol symbol : mSymbols) {
+			symbol.populateList(list);
+		}
 	}
 
 	@Override
 	public float getMACD() {
-		float macd = 0;
-		float value = 0;
-		float weight = 0;
-		for (int i = 0; i < Math.min(mSymbols.size(), mWeights.size()); ++i) {
-			Symbol symbol = mSymbols.get(i);
-			macd += symbol.getMACD()/symbol.getValue()*mWeights.get(i);
-			value += symbol.getValue()*mWeights.get(i);
-			weight = mWeights.get(i);
+		if (hasValidData()) {
+			float macd = 0;
+			float value = 0;
+			float weight = 0;
+			for (int i = 0; i < Math.min(mSymbols.size(), mWeights.size()); ++i) {
+				Symbol symbol = mSymbols.get(i);
+				macd += symbol.getMACD()/symbol.getValue()*mWeights.get(i);
+				value += symbol.getValue()*mWeights.get(i);
+				weight += mWeights.get(i);
+			}
+			return macd * value / weight / weight;
+		} else {
+			return super.getMACD();
 		}
-		return macd * value / weight / weight;
 	}
 
 	@Override
 	public float getMACDOld() {
-		float macd = 0;
-		float value = 0;
-		float weight = 0;
-		for (int i = 0; i < Math.min(mSymbols.size(), mWeights.size()); ++i) {
-			Symbol symbol = mSymbols.get(i);
-			macd += symbol.getMACDOld()/symbol.getValueOld()*mWeights.get(i);
-			value += symbol.getValueOld()*mWeights.get(i);
-			weight = mWeights.get(i);
+		if (hasValidData()) {
+			float macd = 0;
+			float value = 0;
+			float weight = 0;
+			for (int i = 0; i < Math.min(mSymbols.size(), mWeights.size()); ++i) {
+				Symbol symbol = mSymbols.get(i);
+				macd += symbol.getMACDOld()/symbol.getValueOld()*mWeights.get(i);
+				value += symbol.getValueOld()*mWeights.get(i);
+				weight += mWeights.get(i);
+			}
+			return macd * value / weight / weight;
+		} else {
+			return super.getMACDOld();
 		}
-		return macd * value / weight;
 	}
 
 	@Override
@@ -76,11 +93,20 @@ public class Fund extends Symbol {
 					getMACD(),
 					getMACDOld());
 			return text;
+		} else {
+			List<Symbol> allSymbols = asList();
+			float count = 0;
+			for (Symbol symbol : allSymbols) {
+				if (symbol.hasValidData()) {
+					count += 1;
+				}
+			}
+			return "Loading: " + ((int)(count / allSymbols.size() * 100F)) + "%";
 		}
-		return "";
 	}
 
-	private boolean hasValidData() {
+	@Override
+	public boolean hasValidData() {
 		if (mSymbols.size() == 0 || mWeights.size() == 0 || mSymbols.size() != mWeights.size())
 			return false;
 		for (Symbol symbol : mSymbols)

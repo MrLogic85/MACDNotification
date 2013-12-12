@@ -79,14 +79,14 @@ public class CalculateMACD {
 		return res / days;
 	}
 
-	private boolean calculateMACD(Symbol symbol, List<Float> closeData, final Symbol symbol2) {
+	private boolean calculateMACD(Symbol symbol, List<Float> closeData) {
 		Collections.reverse(closeData);
 		if (closeData.size() >= 26) {
 			final List<Float> ema12 = calcEMA(closeData, 12);
 			final List<Float> ema26 = calcEMA(closeData, 26);
 			final List<Float> macdLine = diff(ema12, ema26);
 
-			Log.d(LOG_TAG, symbol2 + " MACD is " + macdLine.get(macdLine.size() - 1)
+			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
 					+ ", based on " + closeData.size() + " values");
 
 			symbol.setMACD(macdLine.get(macdLine.size() - 1));
@@ -96,11 +96,11 @@ public class CalculateMACD {
 			symbol.setDataTime(System.currentTimeMillis());
 			return true;
 		} else if (closeData.size() > 0) {
-			String message = "Not enough data for " + symbol2 + ", only " + closeData.size() + " values found";
+			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		} else {
-			String message = symbol2 + " could not be found";
+			String message = symbol + " could not be found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		}
@@ -207,14 +207,26 @@ public class CalculateMACD {
 					while (synchedSymbols.size() > 0) {
 						Symbol symbol = synchedSymbols.remove(0);
 						Log.d(LOG_TAG, "Calculate MACD for " + symbol.getName());
-
-						URI uri = buildURI(symbol.getName());
-						if (uri != null) {
-							String uriData = fetchData(uri);
-							if (uriData != null) {
-								List<Float> closeData = parseData(uriData);
-								if (validateData(closeData)) {
-									calculateMACD(symbol, closeData, symbol);
+						List<Symbol> symbolAsList = symbol.asList();
+						for (Symbol sym : symbolAsList) {
+							if (sym.hasValidData()) {
+								publishResult(sym);
+							} else {
+								URI uri = buildURI(sym.getName());
+								if (uri != null) {
+									String uriData = fetchData(uri);
+									if (uriData != null) {
+										List<Float> closeData = parseData(uriData);
+										if (validateData(closeData)) {
+											calculateMACD(sym, closeData);
+										} else {
+											break;
+										}
+									} else {
+										break;
+									}
+								} else {
+									break;
 								}
 							}
 						}
