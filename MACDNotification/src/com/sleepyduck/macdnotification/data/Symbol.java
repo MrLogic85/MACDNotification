@@ -12,6 +12,7 @@ public class Symbol extends XMLParsableAdaptor {
 	private static final long serialVersionUID = -2937633173541304552L;
 
 	private String mName = "";
+	private String mDisplayName = "";
 	private Float mValue = -99999F;
 	private Float mValueOld = -99999F;
 	private Float mMACD = -99999F;
@@ -25,6 +26,7 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public Symbol(XMLElement element) {
 		mName = element.getAttribute("name", "");
+		mDisplayName = element.getAttribute("displayName", "");
 		//mValue = Float.valueOf(element.getAttribute("value", "-99999"));
 		//mValueOld = Float.valueOf(element.getAttribute("valueOld", "-99999"));
 		//mMACD = Float.valueOf(element.getAttribute("macd", "-99999"));
@@ -49,6 +51,7 @@ public class Symbol extends XMLParsableAdaptor {
 	public void putAttributes(XMLElement element) {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
+		element.addAttribute("displayName", mDisplayName);
 		//element.addAttribute("value", String.valueOf(mValue));
 		//element.addAttribute("valueOld", String.valueOf(mValueOld));
 		//element.addAttribute("macd", String.valueOf(mMACD));
@@ -66,8 +69,8 @@ public class Symbol extends XMLParsableAdaptor {
 		return list;
 	}
 
-	public String getName() {
-		return mName;
+	public void setDisplayName(String name) {
+		mDisplayName = name;
 	}
 
 	public void setValue(Float val) {
@@ -88,6 +91,14 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public void setDataTime(long dataTime) {
 		mDataTime = dataTime;
+	}
+
+	public String getName() {
+		return mName;
+	}
+
+	public String getDisplayName() {
+		return mDisplayName;
 	}
 
 	public float getValue() {
@@ -146,6 +157,10 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public boolean hasValidData() {
 		return mMACD > -99999f;
+	}
+
+	public boolean hasDisplayName() {
+		return mDisplayName.length() > 0;
 	}
 
 	public boolean doRetry() {

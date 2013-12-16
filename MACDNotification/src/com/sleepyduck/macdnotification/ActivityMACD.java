@@ -19,6 +19,8 @@ import android.widget.Toast;
 import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
+import com.sleepyduck.macdnotification.data.RetrieveDisplayName;
+import com.sleepyduck.macdnotification.data.RetrieveDisplayName.RetrieveDisplayNameListener;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class ActivityMACD extends Activity {
@@ -32,7 +34,7 @@ public class ActivityMACD extends Activity {
 	private EditText mNameEditText;
 	private final DataController mDataController = new DataController();
 
-	private MACDListener mMACDListener = new MACDListener() {
+	private final MACDListener mMACDListener = new MACDListener() {
 		@Override
 		public void onMessage(String message) {
 			Toast.makeText(ActivityMACD.this, message, Toast.LENGTH_LONG).show();
@@ -47,6 +49,14 @@ public class ActivityMACD extends Activity {
 		}
 	};
 	private final CalculateMACD mMACDCalculator = new CalculateMACD(mMACDListener);
+
+	private final RetrieveDisplayNameListener mDisplayNameListener = new RetrieveDisplayNameListener() {
+		@Override
+		public void onRetrieveComplete(Symbol symbol) {
+			mListAdapter.notifyDataSetChanged();
+		}
+	};
+	private final RetrieveDisplayName mRetrieveDisplayName = new RetrieveDisplayName(mDisplayNameListener);
 
 	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
 		@Override
@@ -102,6 +112,7 @@ public class ActivityMACD extends Activity {
 			mDataController.loadFromFile(this);
 			List<Symbol> dataList = mDataController.getAllSymbols();
 			mMACDCalculator.execute(dataList.toArray(new Symbol[dataList.size()]));
+			mRetrieveDisplayName.execute(dataList.toArray(new Symbol[dataList.size()]));
 		} else {
 			mDataController.load(savedInstanceState);
 		}
@@ -135,7 +146,8 @@ public class ActivityMACD extends Activity {
 					&& !mNameEditText.getText().toString().equals("")) {
 				String symbolName = mNameEditText.getText().toString();
 				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName);
-				new CalculateMACD(mMACDListener).execute(symbol);
+				mMACDCalculator.execute(symbol);
+				mRetrieveDisplayName.execute(symbol);
 			}
 		} else {
 			// Add group

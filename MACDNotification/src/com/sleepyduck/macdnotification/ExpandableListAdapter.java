@@ -84,7 +84,11 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 			});
 
 			if (symbol != null) {
-				symbolText.setText(symbol.getName());
+				if (symbol.getDisplayName().length() > 0) {
+					symbolText.setText(symbol.getDisplayName() + " (" + symbol.getName() + ")");
+				} else {
+					symbolText.setText(symbol.getName());
+				}
 				dataText.setText(symbol.getDataText());
 				if (symbol.getMACD() > -99999f) {
 					if (symbol.getMACD() >= 0f) {

@@ -197,7 +197,7 @@ public class CalculateMACD {
 		});
 	}
 
-	protected void execute(final Symbol... symbolList) {
+	public void execute(final Symbol... symbolList) {
 		final List<Symbol> synchedSymbols = Collections.synchronizedList(new LinkedList<Symbol>());
 		Collections.addAll(synchedSymbols, symbolList);
 		for (int i = 0; i < 10; ++i) {

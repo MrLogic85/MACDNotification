@@ -114,4 +114,9 @@ public class Fund extends Symbol {
 				return false;
 		return true;
 	}
+
+	@Override
+	public boolean hasDisplayName() {
+		return true;
+	}
 }

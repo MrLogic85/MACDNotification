@@ -146,7 +146,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
 		builder.setContentTitle("MACD Notification");
 
-		builder.setContentText(buyOrSell + " " + symbol.getName());
+		builder.setContentText(buyOrSell + " " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()));
 		builder.setSmallIcon(R.drawable.ic_launcher_small);
 		final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),
 				PendingIntent.FLAG_UPDATE_CURRENT);
