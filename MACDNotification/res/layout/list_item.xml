@@ -21,6 +21,35 @@
             android:id="@+id/textViewSymbolData"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" />
+        
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="bottom">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:text="Rule #1:"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="10dp"/>
+            <ImageView
+                android:id="@+id/ruleNo1SMAIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_red"
+                android:layout_marginEnd="10dp"/>
+            <ImageView
+                android:id="@+id/ruleNo1MACDIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_red"
+                android:layout_marginEnd="10dp"/>
+            <ImageView
+                android:id="@+id/ruleNo1StochasticIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_red"/>
+        </LinearLayout>
     </LinearLayout>
 
     <ImageView

@@ -55,6 +55,9 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 		if (convertView != null) {
 			TextView symbolText = (TextView) (convertView.findViewById(R.id.textViewSymbol));
 			TextView dataText = (TextView) (convertView.findViewById(R.id.textViewSymbolData));
+			ImageView ruleNo1SMA = (ImageView) (convertView.findViewById(R.id.ruleNo1SMAIcon));
+			ImageView ruleNo1MACD = (ImageView) (convertView.findViewById(R.id.ruleNo1MACDIcon));
+			ImageView ruleNo1Stochastic = (ImageView) (convertView.findViewById(R.id.ruleNo1StochasticIcon));
 
 			ImageView delete = (ImageView) convertView.findViewById(R.id.imageViewDelete);
 			delete.setOnClickListener(new View.OnClickListener() {
@@ -99,6 +102,9 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				} else {
 					symbolText.setTextColor(Color.WHITE);
 				}
+				ruleNo1SMA.setImageResource(symbol.isRuleNo1SMALessThanValue() ? R.drawable.ic_green : R.drawable.ic_red);
+				ruleNo1MACD.setImageResource(symbol.isRuleNo1HistogramPositive() ? R.drawable.ic_green : R.drawable.ic_red);
+				ruleNo1Stochastic.setImageResource(symbol.isRuleNo1StochasticPositive() ? R.drawable.ic_green : R.drawable.ic_red);
 			}
 			return convertView;
 		}

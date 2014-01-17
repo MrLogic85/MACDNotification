@@ -17,6 +17,12 @@ public class Symbol extends XMLParsableAdaptor {
 	private Float mValueOld = -99999F;
 	private Float mMACD = -99999F;
 	private Float mMACDOld = -99999F;
+	private float mRuleNo1Histogram = -99999F;
+	private float mRuleNo1HistogramOld = -99999F;
+	private float mRuleNo1Stochastic = -99999F;
+	private float mRuleNo1StochasticOld = -99999F;
+	private float mRuleNo1SMA = -99999F;
+	private float mRuleNo1SMAOld = -99999F;
 	private long mDataTime = 0L;
 	private int mRetryCounter = 3;
 
@@ -27,11 +33,6 @@ public class Symbol extends XMLParsableAdaptor {
 	public Symbol(XMLElement element) {
 		mName = element.getAttribute("name", "");
 		mDisplayName = element.getAttribute("displayName", "");
-		//mValue = Float.valueOf(element.getAttribute("value", "-99999"));
-		//mValueOld = Float.valueOf(element.getAttribute("valueOld", "-99999"));
-		//mMACD = Float.valueOf(element.getAttribute("macd", "-99999"));
-		//mMACDOld = Float.valueOf(element.getAttribute("macdOld", "-99999"));
-		//mDataTime = Long.valueOf(element.getAttribute("dataTime", "0"));
 	}
 
 	@Override
@@ -52,11 +53,6 @@ public class Symbol extends XMLParsableAdaptor {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
 		element.addAttribute("displayName", mDisplayName);
-		//element.addAttribute("value", String.valueOf(mValue));
-		//element.addAttribute("valueOld", String.valueOf(mValueOld));
-		//element.addAttribute("macd", String.valueOf(mMACD));
-		//element.addAttribute("macdOld", String.valueOf(mMACDOld));
-		//element.addAttribute("dataTime", String.valueOf(mDataTime));
 	}
 
 	public void populateList(List<Symbol> list) {
@@ -93,6 +89,30 @@ public class Symbol extends XMLParsableAdaptor {
 		mDataTime = dataTime;
 	}
 
+	public void setRuleNo1Histogram(float hist) {
+		mRuleNo1Histogram = hist;
+	}
+
+	public void setRuleNo1HistogramOld(float hist) {
+		mRuleNo1HistogramOld = hist;
+	}
+
+	public void setRuleNo1Stochastic(float stoch) {
+		mRuleNo1Stochastic = stoch;
+	}
+
+	public void setRuleNo1StochasticOld(float stoch) {
+		mRuleNo1StochasticOld = stoch;
+	}
+
+	public void setRuleNo1SMA(float sma) {
+		mRuleNo1SMA = sma;
+	}
+
+	public void setRuleNo1SMAOld(float smaOld) {
+		mRuleNo1SMAOld = smaOld;
+	}
+
 	public String getName() {
 		return mName;
 	}
@@ -127,6 +147,18 @@ public class Symbol extends XMLParsableAdaptor {
 			return text;
 		}
 		return "";
+	}
+
+	public boolean isRuleNo1SMALessThanValue() {
+		return mValue > mRuleNo1SMA;
+	}
+
+	public boolean isRuleNo1HistogramPositive() {
+		return mRuleNo1Histogram > 0;
+	}
+
+	public boolean isRuleNo1StochasticPositive() {
+		return mRuleNo1Stochastic > 0;
 	}
 
 	public boolean isNewDataDay(long newTime) {

@@ -29,14 +29,14 @@ import android.util.Log;
 
 import com.sleepyduck.macdnotification.data.Symbol;
 
-public class CalculateMACD {
-	private static final String LOG_TAG = CalculateMACD.class.getSimpleName();
+public class CalculateTechnicalAnalysis {
+	private static final String LOG_TAG = CalculateTechnicalAnalysis.class.getSimpleName();
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
 	private MACDListener mListener = null;
 	private Handler mHandler;
 
-	public CalculateMACD(MACDListener listener) {
+	public CalculateTechnicalAnalysis(MACDListener listener) {
 		mListener = listener;
 		mHandler = new Handler();
 	}
@@ -64,7 +64,7 @@ public class CalculateMACD {
 
 	private List<Float> calcEMA(final List<Float> values, final int days) {
 		final ArrayList<Float> ema = new ArrayList<Float>();
-		ema.add(calcFirstSMA(values, days));
+		ema.add(calcSMA(values, 0, days));
 		final float multiplier = 2.0f / (days + 1);
 		for (int i = days; i < values.size(); i++) {
 			ema.add(values.get(i) * multiplier + ema.get(ema.size() - 1) * (1.0f - multiplier));
@@ -72,39 +72,13 @@ public class CalculateMACD {
 		return ema;
 	}
 
-	private float calcFirstSMA(final List<Float> values, final int days) {
+	private float calcSMA(final List<Float> values, int start, int days) {
+		if (values.size() < start + days)
+			days = values.size() - start;
 		float res = 0;
-		for (int i = 0; i < days; i++)
+		for (int i = start; i < start+days; i++)
 			res += values.get(i);
 		return res / days;
-	}
-
-	private boolean calculateMACD(Symbol symbol, List<Float> closeData) {
-		Collections.reverse(closeData);
-		if (closeData.size() >= 26) {
-			final List<Float> ema12 = calcEMA(closeData, 12);
-			final List<Float> ema26 = calcEMA(closeData, 26);
-			final List<Float> macdLine = diff(ema12, ema26);
-
-			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
-					+ ", based on " + closeData.size() + " values");
-
-			symbol.setMACD(macdLine.get(macdLine.size() - 1));
-			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
-			symbol.setValue(closeData.get(closeData.size() - 1));
-			symbol.setValueOld(closeData.get(closeData.size() - 2));
-			symbol.setDataTime(System.currentTimeMillis());
-			return true;
-		} else if (closeData.size() > 0) {
-			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
-			Log.d(LOG_TAG, message);
-			publishProgress(message);
-		} else {
-			String message = symbol + " could not be found";
-			Log.d(LOG_TAG, message);
-			publishProgress(message);
-		}
-		return false;
 	}
 
 	private List<Float> diff(final List<Float> LHS, final List<Float> RHS) {
@@ -116,6 +90,90 @@ public class CalculateMACD {
 			res.set(smallest - i, LHS.get(LHS.size() - i) - RHS.get(RHS.size() - i));
 		}
 		return res;
+	}
+
+	private List<Float> calcHighest(final List<Float> values, int days) {
+		final ArrayList<Float> high = new ArrayList<Float>();
+		for (int i = 0; i < values.size()-days; i++) {
+			float res = -1;
+			for (int j = i; j < i + days; j++) {
+				res = Math.max(res, values.get(j));
+			}
+			high.add(res);
+		}
+		return high;
+	}
+
+	private List<Float> calcLowest(final List<Float> values, int days) {
+		final ArrayList<Float> high = new ArrayList<Float>();
+		for (int i = 0; i < values.size()-days; i++) {
+			float res = -1;
+			for (int j = i; j < i + days; j++) {
+				res = Math.min(res, values.get(j));
+			}
+			high.add(res);
+		}
+		return high;
+	}
+
+	private List<Float> calcPercentile(List<Float> highs, List<Float> lows, List<Float> closeData) {
+		final ArrayList<Float> percentile = new ArrayList<Float>();
+		final int shortest = Math.min(Math.min(highs.size(), lows.size()), closeData.size());
+		int highOffset = highs.size() - shortest;
+		int lowOffset = lows.size() - shortest;
+		int closeOffset = closeData.size() - shortest;
+		for (int i = 0; i < shortest; i++) {
+			percentile.add((closeData.get(i+closeOffset) - lows.get(i+lowOffset))/(highs.get(i+highOffset) - lows.get(i+lowOffset)) * 100);
+		}
+		return percentile;
+	}
+
+	private boolean calculateMACD(Symbol symbol, List<Float> closeData) {
+		// Reverse the data so that the oldest value is first
+		Collections.reverse(closeData);
+		if (closeData.size() >= 26) {
+			symbol.setDataTime(System.currentTimeMillis());
+
+			// Close
+			symbol.setValue(closeData.get(closeData.size() - 1));
+			symbol.setValueOld(closeData.get(closeData.size() - 2));
+
+			// MACD
+			List<Float> macdLine = diff(calcEMA(closeData, 12), calcEMA(closeData, 26));
+			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
+					+ ", based on " + closeData.size() + " values");
+			symbol.setMACD(macdLine.get(macdLine.size() - 1));
+			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
+
+			// MACD Rule #1
+			macdLine = diff(calcEMA(closeData, 8), calcEMA(closeData, 17));
+			List<Float> histogram = diff(macdLine, calcEMA(macdLine, 9));
+			symbol.setRuleNo1Histogram(histogram.get(histogram.size() - 1));
+			symbol.setRuleNo1HistogramOld(histogram.get(histogram.size() - 2));
+
+			// Stochastic
+			List<Float> k = calcPercentile(calcHighest(closeData, 14), calcLowest(closeData, 14), closeData);
+			float d = calcSMA(k, k.size()-6, 5);
+			float dOld = calcSMA(k, k.size()-7, 5);
+			symbol.setRuleNo1Stochastic(k.get(k.size() - 1) - d);
+			symbol.setRuleNo1StochasticOld(k.get(k.size() - 2) - dOld);
+
+			// Moving Average
+			float sma10 = calcSMA(closeData, closeData.size()-11, 10);
+			float sma10Old = calcSMA(closeData, closeData.size()-12, 10);
+			symbol.setRuleNo1SMA(sma10);
+			symbol.setRuleNo1SMAOld(sma10Old);
+			return true;
+		} else if (closeData.size() > 0) {
+			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
+			Log.d(LOG_TAG, message);
+			publishProgress(message);
+		} else {
+			String message = symbol + " could not be found";
+			Log.d(LOG_TAG, message);
+			publishProgress(message);
+		}
+		return false;
 	}
 
 	private String fetchData(URI uri) {

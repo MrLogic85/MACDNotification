@@ -16,7 +16,7 @@ import android.widget.ExpandableListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.sleepyduck.macdnotification.CalculateMACD.MACDListener;
+import com.sleepyduck.macdnotification.CalculateTechnicalAnalysis.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.RetrieveDisplayName;
@@ -48,7 +48,7 @@ public class ActivityMACD extends Activity {
 				mListAdapter.notifyDataSetChanged();
 		}
 	};
-	private final CalculateMACD mMACDCalculator = new CalculateMACD(mMACDListener);
+	private final CalculateTechnicalAnalysis mMACDCalculator = new CalculateTechnicalAnalysis(mMACDListener);
 
 	private final RetrieveDisplayNameListener mDisplayNameListener = new RetrieveDisplayNameListener() {
 		@Override
