@@ -11,7 +11,7 @@ public class Fund extends Symbol {
 	private List<Float> mWeights = new ArrayList<Float>();
 
 	public Fund(String name) {
-		super(name);
+		super(name, null);
 	}
 
 	public Fund(XMLElement element) {

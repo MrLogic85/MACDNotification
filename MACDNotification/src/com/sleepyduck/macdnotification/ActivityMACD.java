@@ -16,7 +16,7 @@ import android.widget.ExpandableListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.sleepyduck.macdnotification.CalculateTechnicalAnalysis.MACDListener;
+import com.sleepyduck.macdnotification.CalculateTechnicalIndicators.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.RetrieveDisplayName;
@@ -31,7 +31,9 @@ public class ActivityMACD extends Activity {
 	private Spinner mGroupSpinner;
 	private ArrayAdapter<Group> mSpinnerAdapter;
 	private View mAddLayout;
+	private View mRuleNo1Layout;
 	private EditText mNameEditText;
+	private EditText mRuleNo1ValuationEditText;
 	private final DataController mDataController = new DataController();
 
 	private final MACDListener mMACDListener = new MACDListener() {
@@ -48,7 +50,7 @@ public class ActivityMACD extends Activity {
 				mListAdapter.notifyDataSetChanged();
 		}
 	};
-	private final CalculateTechnicalAnalysis mMACDCalculator = new CalculateTechnicalAnalysis(mMACDListener);
+	private final CalculateTechnicalIndicators mMACDCalculator = new CalculateTechnicalIndicators(mMACDListener);
 
 	private final RetrieveDisplayNameListener mDisplayNameListener = new RetrieveDisplayNameListener() {
 		@Override
@@ -64,11 +66,14 @@ public class ActivityMACD extends Activity {
 			if (intent.hasExtra(DATA_REMOVED_SYMBOL)) {
 				Symbol symbol = (Symbol) intent.getSerializableExtra(DATA_REMOVED_SYMBOL);
 				mGroupSpinner.setVisibility(View.VISIBLE);
+				mRuleNo1Layout.setVisibility(View.VISIBLE);
 				mAddLayout.setVisibility(View.VISIBLE);
-				if (symbol != null && mNameEditText != null) {
+				if (symbol != null && mNameEditText != null && mRuleNo1ValuationEditText != null) {
 					mNameEditText.setText(symbol.getName());
 					mNameEditText.setHint(R.string.symbol_name);
 					mNameEditText.requestFocus();
+					mRuleNo1ValuationEditText.setText(symbol.getRuleNo1Valuation() != null ?
+							String.valueOf(symbol.getRuleNo1Valuation()) : "");
 				}
 			}
 		}
@@ -96,8 +101,10 @@ public class ActivityMACD extends Activity {
 		setContentView(R.layout.activity_macd);
 
 		mGroupSpinner = (Spinner) findViewById(R.id.spinnerGroup);
+		mRuleNo1Layout = findViewById(R.id.ruleNo1Layout);
 		mAddLayout = findViewById(R.id.addLayout);
 		mNameEditText = (EditText) findViewById(R.id.editTextNewSymbol);
+		mRuleNo1ValuationEditText = (EditText) findViewById(R.id.editTextRuleNo1Value);
 
 		final ExpandableListView mListView = (ExpandableListView) findViewById(R.id.listView);
 
@@ -145,7 +152,11 @@ public class ActivityMACD extends Activity {
 					&& mNameEditText.getText() != null
 					&& !mNameEditText.getText().toString().equals("")) {
 				String symbolName = mNameEditText.getText().toString();
-				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName);
+				Float ruleNo1Valuation = null;
+				try {
+					ruleNo1Valuation = Float.valueOf(mRuleNo1ValuationEditText.getText().toString());
+				} catch (NumberFormatException e) { }
+				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName, ruleNo1Valuation);
 				mMACDCalculator.execute(symbol);
 				mRetrieveDisplayName.execute(symbol);
 			}
@@ -168,6 +179,7 @@ public class ActivityMACD extends Activity {
 	public void onNewGroupClicked(final View view) {
 		if (mGroupSpinner.getVisibility() == View.VISIBLE || mAddLayout.getVisibility() == View.GONE) {
 			mGroupSpinner.setVisibility(View.GONE);
+			mRuleNo1Layout.setVisibility(View.GONE);
 			if (mNameEditText != null) {
 				mNameEditText.setText("");
 				mNameEditText.setHint(R.string.group_name);
@@ -181,9 +193,11 @@ public class ActivityMACD extends Activity {
 	public void onNewSymbolClicked(final View view) {
 		if (mGroupSpinner.getVisibility() == View.GONE || mAddLayout.getVisibility() == View.GONE) {
 			mGroupSpinner.setVisibility(View.VISIBLE);
+			mRuleNo1Layout.setVisibility(View.VISIBLE);
 			if (mNameEditText != null) {
 				mNameEditText.setText("");
 				mNameEditText.setHint(R.string.symbol_name);
+				mRuleNo1ValuationEditText.setText("");
 			}
 			mAddLayout.setVisibility(View.VISIBLE);
 		} else {

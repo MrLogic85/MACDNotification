@@ -54,10 +54,10 @@ public class DataController {
 		return mGroups;
 	}
 
-	public Symbol addSymbol(int groupIndex, String symbol) {
+	public Symbol addSymbol(int groupIndex, String symbol, Float ruleNo1Valuation) {
 		if (mGroups.size() > groupIndex) {
 			Group group = mGroups.get(groupIndex);
-			return group.addSymbol(symbol);
+			return group.addSymbol(symbol, ruleNo1Valuation);
 		}
 		return null;
 	}
@@ -251,7 +251,7 @@ public class DataController {
 				if (name.equals("")) {
 					name = prefs.getString("group:" + i + ":" + j + ":name", "");
 				}
-				group.addSymbol(name);
+				group.addSymbol(name, null);
 			}
 		}
 	}

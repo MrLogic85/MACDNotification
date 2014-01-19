@@ -15,7 +15,7 @@ import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.sleepyduck.macdnotification.CalculateTechnicalAnalysis.MACDListener;
+import com.sleepyduck.macdnotification.CalculateTechnicalIndicators.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Symbol;
 
@@ -38,7 +38,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 				displayNotification(symbol);
 		}
 	};
-	private CalculateTechnicalAnalysis mMACDCalculator = new CalculateTechnicalAnalysis(listener);
+	private CalculateTechnicalIndicators mMACDCalculator = new CalculateTechnicalIndicators(listener);
 
 	@Override
 	public void onReceive(final Context context, final Intent intent) {

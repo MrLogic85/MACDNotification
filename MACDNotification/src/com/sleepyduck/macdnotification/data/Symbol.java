@@ -13,6 +13,7 @@ public class Symbol extends XMLParsableAdaptor {
 
 	private String mName = "";
 	private String mDisplayName = "";
+	private Float mRuleNo1Valuation;
 	private Float mValue = -99999F;
 	private Float mValueOld = -99999F;
 	private Float mMACD = -99999F;
@@ -26,13 +27,17 @@ public class Symbol extends XMLParsableAdaptor {
 	private long mDataTime = 0L;
 	private int mRetryCounter = 3;
 
-	public Symbol(String name) {
+	public Symbol(String name, Float ruleNo1Valuation) {
 		mName = name;
+		mRuleNo1Valuation = ruleNo1Valuation;
 	}
 
 	public Symbol(XMLElement element) {
 		mName = element.getAttribute("name", "");
 		mDisplayName = element.getAttribute("displayName", "");
+		if (element.getAttribute("ruleNo1Valuation") != null) {
+			mRuleNo1Valuation = Float.valueOf(element.getAttribute("ruleNo1Valuation", ""));
+		}
 	}
 
 	@Override
@@ -53,6 +58,9 @@ public class Symbol extends XMLParsableAdaptor {
 		super.putAttributes(element);
 		element.addAttribute("name", mName);
 		element.addAttribute("displayName", mDisplayName);
+		if (mRuleNo1Valuation != null) {
+			element.addAttribute("ruleNo1Valuation", String.valueOf(mRuleNo1Valuation));
+		}
 	}
 
 	public void populateList(List<Symbol> list) {
@@ -119,6 +127,10 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public String getDisplayName() {
 		return mDisplayName;
+	}
+
+	public Float getRuleNo1Valuation() {
+		return mRuleNo1Valuation;
 	}
 
 	public float getValue() {

@@ -71,8 +71,8 @@ public class Group extends XMLParsableAdaptor {
 		return null;
 	}
 
-	public Symbol addSymbol(String name) {
-		Symbol symbol = new Symbol(name);
+	public Symbol addSymbol(String name, Float ruleNo1Valuation) {
+		Symbol symbol = new Symbol(name, ruleNo1Valuation);
 		mSymbols.add(symbol);
 		return symbol;
 	}

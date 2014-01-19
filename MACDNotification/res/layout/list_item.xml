@@ -27,6 +27,7 @@
             android:layout_height="wrap_content"
             android:gravity="bottom">
             <TextView
+                android:id="@+id/ruleNo1Text"
                 android:layout_width="wrap_content"
                 android:layout_height="fill_parent"
                 android:text="Rule #1:"
@@ -36,19 +37,17 @@
                 android:id="@+id/ruleNo1SMAIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_red"
-                android:layout_marginEnd="10dp"/>
-            <ImageView
-                android:id="@+id/ruleNo1MACDIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_red"
                 android:layout_marginEnd="10dp"/>
             <ImageView
                 android:id="@+id/ruleNo1StochasticIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_red"/>
+                android:layout_marginEnd="10dp"/>
+            <ImageView
+                android:id="@+id/ruleNo1MACDIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"/>
         </LinearLayout>
     </LinearLayout>
 

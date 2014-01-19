@@ -29,14 +29,14 @@ import android.util.Log;
 
 import com.sleepyduck.macdnotification.data.Symbol;
 
-public class CalculateTechnicalAnalysis {
-	private static final String LOG_TAG = CalculateTechnicalAnalysis.class.getSimpleName();
+public class CalculateTechnicalIndicators {
+	private static final String LOG_TAG = CalculateTechnicalIndicators.class.getSimpleName();
 
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
 	private MACDListener mListener = null;
 	private Handler mHandler;
 
-	public CalculateTechnicalAnalysis(MACDListener listener) {
+	public CalculateTechnicalIndicators(MACDListener listener) {
 		mListener = listener;
 		mHandler = new Handler();
 	}
@@ -50,9 +50,9 @@ public class CalculateTechnicalAnalysis {
 				calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
 
 		try {
-			String query = "select Close from yahoo.finance.historicaldata where startDate=\"" + start
+			String query = "select Close,High,Low from yahoo.finance.historicaldata where startDate=\"" + start
 					+ "\" AND symbol=\"" + symbol + "\" AND endDate=\"" + end + "\"";
-			query = query.replace(" ", "%20").replace("=", "%3D").replace("\"", "%22").replace("^", "%5E");
+			query = query.replace(" ", "%20").replace("=", "%3D").replace("\"", "%22").replace("^", "%5E").replace(",", "%2C");
 			query = "http://query.yahooapis.com/v1/public/yql?q=" + query;
 			query += "&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
 			return new URI(query);
@@ -60,6 +60,67 @@ public class CalculateTechnicalAnalysis {
 			Log.e(LOG_TAG, "", e);
 			return null;
 		}
+	}
+
+	private String fetchData(URI uri) {
+		final HttpClient client = new DefaultHttpClient();
+		final HttpGet request = new HttpGet();
+		request.setURI(uri);
+		try {
+			final HttpResponse response = client.execute(request);
+			final BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			final StringBuilder sb = new StringBuilder("");
+			String l;
+			while ((l = in.readLine()) != null) {
+				sb.append(l).append("\n");
+			}
+			return sb.toString();
+		} catch (final IOException e) {
+			Log.e(LOG_TAG, "", e);
+			return null;
+		}
+	}
+
+	private List<StockData> parseData(String uriData) {
+		final List<StockData> stockData = new ArrayList<StockData>();
+		try {
+			final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+			parser.parse(new InputSource(new StringReader(uriData)), new DefaultHandler() {
+				private boolean mClose = false;
+				private boolean mHigh = false;
+				private boolean mLow = false;
+
+				@Override
+				public void characters(final char[] ch, final int start, final int length) throws SAXException {
+					super.ignorableWhitespace(ch, start, length);
+					final String data = String.copyValueOf(ch, start, length);
+					if (mClose) {
+						stockData.get(stockData.size()-1).Close = Float.valueOf(data);
+					} else if (mHigh) {
+						stockData.get(stockData.size()-1).High = Float.valueOf(data);
+					} else if (mLow) {
+						stockData.get(stockData.size()-1).Low = Float.valueOf(data);
+					}
+				}
+
+				@Override
+				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
+					super.startElement(uri, localName, qName, attributes);
+					mClose = qName.toLowerCase().equals("close");
+					mHigh = qName.toLowerCase().equals("high");
+					mLow = qName.toLowerCase().equals("low");
+					if (qName.toLowerCase().equals("quote")) {
+						stockData.add(new StockData());
+					}
+				}
+			});
+		} catch (final Exception e) {
+			Log.e(LOG_TAG, "", e);
+			Log.e(LOG_TAG, "Data: " + uriData);
+			return null;
+		}
+		return stockData;
 	}
 
 	private List<Float> calcEMA(final List<Float> values, final int days) {
@@ -128,20 +189,21 @@ public class CalculateTechnicalAnalysis {
 		return percentile;
 	}
 
-	private boolean calculateMACD(Symbol symbol, List<Float> closeData) {
+	private boolean calculateMACD(Symbol symbol, List<StockData> stockData) {
 		// Reverse the data so that the oldest value is first
-		Collections.reverse(closeData);
-		if (closeData.size() >= 26) {
+		Collections.reverse(stockData);
+		if (stockData.size() >= 26) {
 			symbol.setDataTime(System.currentTimeMillis());
 
 			// Close
-			symbol.setValue(closeData.get(closeData.size() - 1));
-			symbol.setValueOld(closeData.get(closeData.size() - 2));
+			symbol.setValue(stockData.get(stockData.size() - 1).Close);
+			symbol.setValueOld(stockData.get(stockData.size() - 2).Close);
 
 			// MACD
+			List<Float> closeData = StockToCloseList(stockData);
 			List<Float> macdLine = diff(calcEMA(closeData, 12), calcEMA(closeData, 26));
 			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
-					+ ", based on " + closeData.size() + " values");
+					+ ", based on " + stockData.size() + " values");
 			symbol.setMACD(macdLine.get(macdLine.size() - 1));
 			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
 
@@ -152,7 +214,9 @@ public class CalculateTechnicalAnalysis {
 			symbol.setRuleNo1HistogramOld(histogram.get(histogram.size() - 2));
 
 			// Stochastic
-			List<Float> k = calcPercentile(calcHighest(closeData, 14), calcLowest(closeData, 14), closeData);
+			List<Float> highData = StockToHighList(stockData);
+			List<Float> lowData = StockToLowList(stockData);
+			List<Float> k = calcPercentile(calcHighest(highData, 14), calcLowest(lowData, 14), closeData);
 			float d = calcSMA(k, k.size()-6, 5);
 			float dOld = calcSMA(k, k.size()-7, 5);
 			symbol.setRuleNo1Stochastic(k.get(k.size() - 1) - d);
@@ -164,8 +228,8 @@ public class CalculateTechnicalAnalysis {
 			symbol.setRuleNo1SMA(sma10);
 			symbol.setRuleNo1SMAOld(sma10Old);
 			return true;
-		} else if (closeData.size() > 0) {
-			String message = "Not enough data for " + symbol + ", only " + closeData.size() + " values found";
+		} else if (stockData.size() > 0) {
+			String message = "Not enough data for " + symbol + ", only " + stockData.size() + " values found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
 		} else {
@@ -176,61 +240,11 @@ public class CalculateTechnicalAnalysis {
 		return false;
 	}
 
-	private String fetchData(URI uri) {
-		final HttpClient client = new DefaultHttpClient();
-		final HttpGet request = new HttpGet();
-		request.setURI(uri);
-		try {
-			final HttpResponse response = client.execute(request);
-			final BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
-					.getContent()));
-			final StringBuilder sb = new StringBuilder("");
-			String l;
-			while ((l = in.readLine()) != null) {
-				sb.append(l).append("\n");
-			}
-			return sb.toString();
-		} catch (final IOException e) {
-			Log.e(LOG_TAG, "", e);
-			return null;
-		}
-	}
-
-	private List<Float> parseData(String uriData) {
-		final List<Float> closeData = new ArrayList<Float>();
-		try {
-			final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-			parser.parse(new InputSource(new StringReader(uriData)), new DefaultHandler() {
-				private boolean mClose = false;
-
-				@Override
-				public void characters(final char[] ch, final int start, final int length) throws SAXException {
-					super.ignorableWhitespace(ch, start, length);
-					if (mClose) {
-						final String data = String.copyValueOf(ch, start, length);
-						closeData.add(Float.valueOf(data));
-					}
-				}
-
-				@Override
-				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
-					super.startElement(uri, localName, qName, attributes);
-					mClose = qName.toLowerCase().equals("close");
-				}
-			});
-		} catch (final Exception e) {
-			Log.e(LOG_TAG, "", e);
-			Log.e(LOG_TAG, "Data: " + uriData);
-			return null;
-		}
-		return closeData;
-	}
-
-	private boolean validateData(List<Float> closeData) {
-		if (closeData == null)
+	private boolean validateData(List<StockData> stockData) {
+		if (stockData == null)
 			return false;
-		for (final float val : closeData)
-			if (val < 0)
+		for (final StockData val : stockData)
+			if (val.Close < 0)
 				return false;
 		return true;
 	}
@@ -274,9 +288,9 @@ public class CalculateTechnicalAnalysis {
 								if (uri != null) {
 									String uriData = fetchData(uri);
 									if (uriData != null) {
-										List<Float> closeData = parseData(uriData);
-										if (validateData(closeData)) {
-											calculateMACD(sym, closeData);
+										List<StockData> stockData = parseData(uriData);
+										if (validateData(stockData)) {
+											calculateMACD(sym, stockData);
 										} else {
 											break;
 										}
@@ -298,5 +312,35 @@ public class CalculateTechnicalAnalysis {
 	public interface MACDListener {
 		public void onMessage(String message);
 		public void onCalculationComplete(Symbol symbol);
+	}
+
+	private class StockData {
+		Float Close;
+		Float High;
+		Float Low;
+	}
+
+	private static List<Float> StockToCloseList(List<StockData> stockData) {
+		List<Float> closeData = new ArrayList<Float>();
+		for (StockData data : stockData) {
+			closeData.add(data.Close);
+		}
+		return closeData;
+	}
+
+	private static List<Float> StockToHighList(List<StockData> stockData) {
+		List<Float> highData = new ArrayList<Float>();
+		for (StockData data : stockData) {
+			highData.add(data.High);
+		}
+		return highData;
+	}
+
+	private static List<Float> StockToLowList(List<StockData> stockData) {
+		List<Float> lowData = new ArrayList<Float>();
+		for (StockData data : stockData) {
+			lowData.add(data.Low);
+		}
+		return lowData;
 	}
 }
