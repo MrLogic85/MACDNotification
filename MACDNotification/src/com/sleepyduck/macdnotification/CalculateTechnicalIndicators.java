@@ -9,7 +9,9 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -124,23 +126,20 @@ public class CalculateTechnicalIndicators {
 		return stockData;
 	}
 
-	private List<Float> calcEMA(final List<Float> values, final int days) {
-		final ArrayList<Float> ema = new ArrayList<Float>();
-		ema.add(calcSMA(values, 0, days));
+	private float calcEMA(float prev, float curr, final int days) {
 		final float multiplier = 2.0f / (days + 1);
-		for (int i = days; i < values.size(); i++) {
-			ema.add(values.get(i) * multiplier + ema.get(ema.size() - 1) * (1.0f - multiplier));
-		}
-		return ema;
+		return curr * multiplier + prev * (1.0f - multiplier);
 	}
 
-	private float calcSMA(final List<Float> values, int start, int days) {
-		if (values.size() < start + days)
-			days = values.size() - start;
-		float res = 0;
-		for (int i = start; i < start+days; i++)
-			res += values.get(i);
-		return res / days;
+	private float calcSMA(StockData data, StockEnum e, int days) {
+        float res = 0;
+        int countDays = 1;
+        do {
+            res += data.get(e);
+            data = data.previous();
+            countDays++;
+        } while (data.hasPrevious() && countDays < days);
+        return res / (float) countDays;
 	}
 
 	private List<Float> diff(final List<Float> LHS, final List<Float> RHS) {
@@ -154,29 +153,21 @@ public class CalculateTechnicalIndicators {
 		return res;
 	}
 
-	private List<Float> calcHighest(final List<Float> values, int days) {
-		final ArrayList<Float> high = new ArrayList<Float>();
-		for (int i = days; i <= values.size(); i++) {
-			float res = -1;
-			for (int j = i-days; j < i; j++) {
-				res = Math.max(res, values.get(j));
-			}
-			high.add(res);
-		}
-		return high;
+	private Float calcHighest(StockData data, int days) {
+        if (days > 1 && data.previous != null) {
+            return Math.max(data.High, calcHighest(data.previous, days-1));
+        } else {
+            return data.High;
+        }
 	}
 
-	private List<Float> calcLowest(final List<Float> values, int days) {
-		final ArrayList<Float> high = new ArrayList<Float>();
-        for (int i = days; i <= values.size(); i++) {
-            float res = Float.MAX_VALUE;
-            for (int j = i-days; j < i; j++) {
-				res = Math.min(res, values.get(j));
-			}
-			high.add(res);
-		}
-		return high;
-	}
+    private Float calcLowest(StockData data, int days) {
+        if (days > 1 && data.previous != null) {
+            return Math.min(data.Low, calcHighest(data.previous, days-1));
+        } else {
+            return data.Low;
+        }
+    }
 
 	private List<Float> calcPercentile(List<Float> highs, List<Float> lows, List<Float> closeData) {
 		final ArrayList<Float> percentile = new ArrayList<Float>();
@@ -201,13 +192,14 @@ public class CalculateTechnicalIndicators {
 			symbol.setValueOld(stockData.get(stockData.size() - 2).Close);
 
 			// MACD
-			List<Float> closeData = StockToCloseList(stockData);
-            List<Float> macdLine = diff(calcEMA(closeData, 12), calcEMA(closeData, 26));
+            List<Float> macdLine = diff(calcEMA(stockData, StockEnum.Close, 12),
+                    calcEMA(stockData, StockEnum.Close, 26));
 			symbol.setMACD(macdLine.get(macdLine.size() - 1));
 			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
 
 			// MACD Rule #1
-			macdLine = diff(calcEMA(closeData, 8), calcEMA(closeData, 17));
+			macdLine = diff(calcEMA(stockData, StockEnum.Close, 8),
+                    calcEMA(stockData, StockEnum.Close, 17));
 			List<Float> histogram = diff(macdLine, calcEMA(macdLine, 9));
 			symbol.setRuleNo1Histogram(histogram.get(histogram.size() - 1));
 			symbol.setRuleNo1HistogramOld(histogram.get(histogram.size() - 2));
@@ -241,6 +233,11 @@ public class CalculateTechnicalIndicators {
 			symbol.setRuleNo1SMAOld(sma10Old);
 			return true;
 		} else if (stockData.size() > 0) {
+            symbol.setValue(stockData.get(stockData.size() - 1).Close);
+            if (stockData.size() > 1) {
+                symbol.setValueOld(stockData.get(stockData.size() - 2).Close);
+            }
+
 			String message = "Not enough data for " + symbol + ", only " + stockData.size() + " values found";
 			Log.d(LOG_TAG, message);
 			publishProgress(message);
@@ -326,38 +323,218 @@ public class CalculateTechnicalIndicators {
 		public void onCalculationComplete(Symbol symbol);
 	}
 
-	private class StockData {
+    private enum StockEnum {
+        Close,
+        High,
+        Low,
+        Close_EMA_8,
+        Close_EMA_12,
+        Close_EMA_17,
+        Close_EMA_26,
+        Close_SMA_10,
+        MACD_8_17,
+        MACD_12_26,
+        MACD_Signal_8_17_9,
+        MACD_Histogram_8_17_9,
+        High_14,
+        Low_14,
+        Stochastic_14_5,
+        Stochastic_Signal_14_5
+    }
+
+	private class StockData implements Iterable<StockData>, Iterator<StockData> {
+        private StockData first;
+        private StockData previous;
+        private StockData next;
+
 		Float Close;
 		Float High;
 		Float Low;
+
+        Float Close_EMA_8;
+        Float Close_EMA_12;
+        Float Close_EMA_17;
+        Float Close_EMA_26;
+
+        Float Close_SMA_10;
+
+        Float MACD_Signal_8_17_9;
+
+        Float High_14;
+        Float Low_14;
+
+        Float Stochastic_14_5;
+        Float Stochastic_Signal_14_5;
+
+        StockData() {
+            first = this;
+        }
+
+        Float get(StockEnum e) {
+            switch (e) {
+                case Close: return Close;
+                case High: return High;
+                case Low: return Low;
+                case Close_EMA_8: return getClose_EMA_8();
+                case Close_EMA_12: return getClose_EMA_12();
+                case Close_EMA_17: return getClose_EMA_17();
+                case Close_EMA_26: return getClose_EMA_26();
+                case Close_SMA_10: return getClose_SMA_10();
+                case MACD_8_17: return getMACD_8_17();
+                case MACD_12_26: return getMACD_12_26();
+                case MACD_Signal_8_17_9: return getMACD_Signal_8_17_9();
+                case MACD_Histogram_8_17_9: return getMACD_Histogram_8_17_9();
+                case High_14: return getHigh_14();
+                case Low_14: return getLow_14();
+                case Stochastic_14_5: return getStochastic_14_5();
+                case Stochastic_Signal_14_5: return getStochastic_Signal_14_5();
+                default: throw new IllegalArgumentException();
+            }
+        }
+
+        public Float getClose_EMA_8() {
+            if (Close_EMA_8 == null) {
+                if (previous != null) {
+                    Close_EMA_8 = calcEMA(previous.getClose_EMA_8(), Close, 8);
+                } else {
+                    Close_EMA_8 = Close;
+                }
+            }
+            return Close_EMA_8;
+        }
+
+        public Float getClose_EMA_12() {
+            if (Close_EMA_12 == null) {
+                if (previous != null) {
+                    Close_EMA_12 = calcEMA(previous.getClose_EMA_12(), Close, 12);
+                } else {
+                    Close_EMA_12 = Close;
+                }
+            }
+            return Close_EMA_12;
+        }
+
+        public Float getClose_EMA_17() {
+            if (Close_EMA_17 == null) {
+                if (previous != null) {
+                    Close_EMA_17 = calcEMA(previous.getClose_EMA_17(), Close, 17);
+                } else {
+                    Close_EMA_17 = Close;
+                }
+            }
+            return Close_EMA_17;
+        }
+
+        public Float getClose_EMA_26() {
+            if (Close_EMA_26 == null) {
+                if (previous != null) {
+                    Close_EMA_26 = calcEMA(previous.getClose_EMA_26(), Close, 26);
+                } else {
+                    Close_EMA_26 = Close;
+                }
+            }
+            return Close_EMA_26;
+        }
+
+        public float getClose_SMA_10() {
+            if (Close_SMA_10 == null) {
+                if (previous != null) {
+                    Close_SMA_10 = calcSMA(this, StockEnum.Close, 10);
+                } else {
+                    Close_SMA_10 = Close;
+                }
+            }
+            return Close_SMA_10;
+        }
+
+        public float getMACD_8_17() {
+            return getClose_EMA_8() - getClose_EMA_17();
+        }
+
+        public float getMACD_12_26() {
+            return getClose_EMA_12() - getClose_EMA_26();
+        }
+
+        public float getMACD_Signal_8_17_9() {
+            if (MACD_Signal_8_17_9 == null) {
+                if (previous != null) {
+                    MACD_Signal_8_17_9 = calcEMA(
+                            previous.getMACD_Signal_8_17_9(), getMACD_8_17(), 9);
+                } else {
+                    MACD_Signal_8_17_9 = getMACD_8_17();
+                }
+            }
+            return MACD_Signal_8_17_9;
+        }
+
+        public float getMACD_Histogram_8_17_9() {
+            return getMACD_8_17() - getMACD_Signal_8_17_9();
+        }
+
+        public float getHigh_14() {
+            if (High_14 == null) {
+                if (previous != null) {
+                    High_14 = calcHighest(this, 14);
+                } else {
+                    High_14 = High;
+                }
+            }
+            return High_14;
+        }
+
+        public float getLow_14() {
+            if (Low_14 == null) {
+                if (previous != null) {
+                    Low_14 = calcLowest(this, 14);
+                } else {
+                    Low_14 = Low;
+                }
+            }
+            return Low_14;
+        }
+
+        void add(StockData data) {
+            if (next != null) {
+                next.previous = data;
+                data.next = next;
+            }
+            next = data;
+            data.previous = this;
+            data.first = first;
+        }
 
         @Override
         public String toString() {
             return "{High: " + High + ", Low: " + Low + ", Close: " + Close + "}";
         }
-	}
 
-	private static List<Float> StockToCloseList(List<StockData> stockData) {
-		List<Float> closeData = new ArrayList<Float>();
-		for (StockData data : stockData) {
-			closeData.add(data.Close);
-		}
-		return closeData;
-	}
+        @Override
+        public Iterator<StockData> iterator() {
+            return first;
+        }
 
-	private static List<Float> StockToHighList(List<StockData> stockData) {
-		List<Float> highData = new ArrayList<Float>();
-		for (StockData data : stockData) {
-			highData.add(data.High);
-		}
-		return highData;
-	}
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
 
-	private static List<Float> StockToLowList(List<StockData> stockData) {
-		List<Float> lowData = new ArrayList<Float>();
-		for (StockData data : stockData) {
-			lowData.add(data.Low);
-		}
-		return lowData;
-	}
+        public boolean hasPrevious() {
+            return previous != null;
+        }
+
+        @Override
+        public StockData next() {
+            return next;
+        }
+
+        @Override
+        public StockData previous() {
+            return previous;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
 }
