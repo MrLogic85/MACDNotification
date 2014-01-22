@@ -129,7 +129,6 @@ public class ActivityMACD extends Activity {
 		registerReceiver(mReceiver, new IntentFilter(ACTION_BROADCAST_REMOVE));
 	}
 
-
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
@@ -142,7 +141,6 @@ public class ActivityMACD extends Activity {
 		unregisterReceiver(mReceiver);
 		mDataController.saveToFile();
 	}
-
 
 	public void onAddSymbolClicked(final View view) {
 		mAddLayout.setVisibility(View.GONE);

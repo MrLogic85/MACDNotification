@@ -118,7 +118,9 @@ public class DataController {
 	}
 
 	public void load(Bundle savedInstanceState) {
-		if (savedInstanceState != null && savedInstanceState.containsKey(SERIALIZABLE_DATA)) {
+		if (savedInstanceState != null
+                && savedInstanceState.containsKey(SERIALIZABLE_DATA)
+                && savedInstanceState.getSerializable(SERIALIZABLE_DATA) instanceof Group[]) {
 			Collections.addAll(mGroups, (Group[]) savedInstanceState.getSerializable(SERIALIZABLE_DATA));
 		}
 	}

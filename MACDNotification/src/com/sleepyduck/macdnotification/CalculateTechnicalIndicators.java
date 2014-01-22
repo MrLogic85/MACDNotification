@@ -155,9 +155,9 @@ public class CalculateTechnicalIndicators {
 
 	private List<Float> calcHighest(final List<Float> values, int days) {
 		final ArrayList<Float> high = new ArrayList<Float>();
-		for (int i = 0; i < values.size()-days; i++) {
+		for (int i = days; i < values.size(); i++) {
 			float res = -1;
-			for (int j = i; j < i + days; j++) {
+			for (int j = i-days; j < i; j++) {
 				res = Math.max(res, values.get(j));
 			}
 			high.add(res);
@@ -167,9 +167,9 @@ public class CalculateTechnicalIndicators {
 
 	private List<Float> calcLowest(final List<Float> values, int days) {
 		final ArrayList<Float> high = new ArrayList<Float>();
-		for (int i = 0; i < values.size()-days; i++) {
-			float res = -1;
-			for (int j = i; j < i + days; j++) {
+        for (int i = days; i < values.size(); i++) {
+            float res = Float.MAX_VALUE;
+            for (int j = i-days; j < i; j++) {
 				res = Math.min(res, values.get(j));
 			}
 			high.add(res);
@@ -180,11 +180,11 @@ public class CalculateTechnicalIndicators {
 	private List<Float> calcPercentile(List<Float> highs, List<Float> lows, List<Float> closeData) {
 		final ArrayList<Float> percentile = new ArrayList<Float>();
 		final int shortest = Math.min(Math.min(highs.size(), lows.size()), closeData.size());
-		int highOffset = highs.size() - shortest;
-		int lowOffset = lows.size() - shortest;
-		int closeOffset = closeData.size() - shortest;
+        List<Float> h = highs.subList(highs.size() - shortest, highs.size());
+        List<Float> l = lows.subList(lows.size()-shortest, lows.size());
+        List<Float> c = closeData.subList(closeData.size()-shortest, closeData.size());
 		for (int i = 0; i < shortest; i++) {
-			percentile.add((closeData.get(i+closeOffset) - lows.get(i+lowOffset))/(highs.get(i+highOffset) - lows.get(i+lowOffset)) * 100);
+			percentile.add((c.get(i) - l.get(i))/(h.get(i) - l.get(i)) * 100);
 		}
 		return percentile;
 	}
@@ -201,9 +201,7 @@ public class CalculateTechnicalIndicators {
 
 			// MACD
 			List<Float> closeData = StockToCloseList(stockData);
-			List<Float> macdLine = diff(calcEMA(closeData, 12), calcEMA(closeData, 26));
-			Log.d(LOG_TAG, symbol + " MACD is " + macdLine.get(macdLine.size() - 1)
-					+ ", based on " + stockData.size() + " values");
+            List<Float> macdLine = diff(calcEMA(closeData, 12), calcEMA(closeData, 26));
 			symbol.setMACD(macdLine.get(macdLine.size() - 1));
 			symbol.setMACDOld(macdLine.get(macdLine.size() - 2));
 
@@ -214,17 +212,17 @@ public class CalculateTechnicalIndicators {
 			symbol.setRuleNo1HistogramOld(histogram.get(histogram.size() - 2));
 
 			// Stochastic
-			List<Float> highData = StockToHighList(stockData);
-			List<Float> lowData = StockToLowList(stockData);
-			List<Float> k = calcPercentile(calcHighest(highData, 14), calcLowest(lowData, 14), closeData);
-			float d = calcSMA(k, k.size()-6, 5);
-			float dOld = calcSMA(k, k.size()-7, 5);
+			List<Float> highData = calcHighest(StockToHighList(stockData), 14);
+			List<Float> lowData = calcLowest(StockToLowList(stockData), 14);
+			List<Float> k = calcPercentile(highData, lowData, closeData);
+            float d = calcSMA(k, k.size()-5, 5);
+			float dOld = calcSMA(k, k.size()-6, 5);
 			symbol.setRuleNo1Stochastic(k.get(k.size() - 1) - d);
 			symbol.setRuleNo1StochasticOld(k.get(k.size() - 2) - dOld);
 
 			// Moving Average
-			float sma10 = calcSMA(closeData, closeData.size()-11, 10);
-			float sma10Old = calcSMA(closeData, closeData.size()-12, 10);
+			float sma10 = calcSMA(closeData, closeData.size()-10, 10);
+			float sma10Old = calcSMA(closeData, closeData.size()-11, 10);
 			symbol.setRuleNo1SMA(sma10);
 			symbol.setRuleNo1SMAOld(sma10Old);
 			return true;
@@ -318,6 +316,11 @@ public class CalculateTechnicalIndicators {
 		Float Close;
 		Float High;
 		Float Low;
+
+        @Override
+        public String toString() {
+            return "{High: " + High + ", Low: " + Low + ", Close: " + Close + "}";
+        }
 	}
 
 	private static List<Float> StockToCloseList(List<StockData> stockData) {
