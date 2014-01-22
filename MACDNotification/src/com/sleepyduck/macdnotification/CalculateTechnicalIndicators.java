@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -155,7 +156,7 @@ public class CalculateTechnicalIndicators {
 
 	private List<Float> calcHighest(final List<Float> values, int days) {
 		final ArrayList<Float> high = new ArrayList<Float>();
-		for (int i = days; i < values.size(); i++) {
+		for (int i = days; i <= values.size(); i++) {
 			float res = -1;
 			for (int j = i-days; j < i; j++) {
 				res = Math.max(res, values.get(j));
@@ -167,7 +168,7 @@ public class CalculateTechnicalIndicators {
 
 	private List<Float> calcLowest(final List<Float> values, int days) {
 		final ArrayList<Float> high = new ArrayList<Float>();
-        for (int i = days; i < values.size(); i++) {
+        for (int i = days; i <= values.size(); i++) {
             float res = Float.MAX_VALUE;
             for (int j = i-days; j < i; j++) {
 				res = Math.min(res, values.get(j));
@@ -215,10 +216,23 @@ public class CalculateTechnicalIndicators {
 			List<Float> highData = calcHighest(StockToHighList(stockData), 14);
 			List<Float> lowData = calcLowest(StockToLowList(stockData), 14);
 			List<Float> k = calcPercentile(highData, lowData, closeData);
-            float d = calcSMA(k, k.size()-5, 5);
-			float dOld = calcSMA(k, k.size()-6, 5);
-			symbol.setRuleNo1Stochastic(k.get(k.size() - 1) - d);
-			symbol.setRuleNo1StochasticOld(k.get(k.size() - 2) - dOld);
+            List<Float> kSlow = new ArrayList<Float>();
+            for (int i = 0; i < 6; i++) {
+                kSlow.add(calcSMA(k, k.size() - 10 + i, 5));
+            }
+            float d = calcSMA(kSlow, kSlow.size()-5, 5);
+            float dOld = calcSMA(kSlow, kSlow.size()-6, 5);
+            /*Log.d(LOG_TAG, "\n" + symbol + "\nHigh  = " + highData.subList(highData.size()-kSlow.size(), highData.size())
+                    + "\nLow    = " + lowData.subList(lowData.size()-kSlow.size(), lowData.size())
+                    + "\nClose  = " + closeData.subList(closeData.size()-kSlow.size(), closeData.size())
+                    + "\n%K     = " + k.subList(k.size()-kSlow.size(), k.size())
+                    + "\n%KSlow = " + kSlow
+                    + "\n%D     = " + "[0, 0, 0, 0, " + dOld + ", " + d + "]");*/
+			symbol.setRuleNo1Stochastic(kSlow.get(kSlow.size()-1) - d);
+			symbol.setRuleNo1StochasticOld(kSlow.get(kSlow.size()-2) - dOld);
+            /*Log.d(LOG_TAG, symbol + " stochastic is %K = " + kSlow.get(kSlow.size()-1) + ", %D = " +
+                    d + ". With high = " + highData.get(highData.size() - 1) +
+                    " and low = " + lowData.get(lowData.size()-1));*/
 
 			// Moving Average
 			float sma10 = calcSMA(closeData, closeData.size()-10, 10);
