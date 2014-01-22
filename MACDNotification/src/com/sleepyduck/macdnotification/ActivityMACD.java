@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -84,13 +83,9 @@ public class ActivityMACD extends Activity {
 		@Override
 		public boolean onChildClick(ExpandableListView expandableListView, View view, int groupIndex, int symbolIndex, long id) {
 			Symbol symbol = mDataController.getGroup(groupIndex).getSymbol(symbolIndex);
-			for (Symbol sym : symbol.asList()) {
-				Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + sym.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
-				Intent intent = new Intent(Intent.ACTION_VIEW);
-				intent.setData(uri);
-				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				startActivity(intent);
-			}
+			Intent intent = new Intent(ActivityMACD.this, ActivityStockView.class);
+			intent.putExtra("symbol", symbol);
+			ActivityMACD.this.startActivity(intent);
 			return true;
 		}
 	};
@@ -115,14 +110,13 @@ public class ActivityMACD extends Activity {
 		mListView.setAdapter(mListAdapter);
 		mListView.setOnChildClickListener(mChildClickListener);
 
-		if (savedInstanceState == null) {
+		if (!mDataController.load(savedInstanceState)) {
 			mDataController.loadFromFile(this);
 			List<Symbol> dataList = mDataController.getAllSymbols();
 			mMACDCalculator.execute(dataList.toArray(new Symbol[dataList.size()]));
 			mRetrieveDisplayName.execute(dataList.toArray(new Symbol[dataList.size()]));
-		} else {
-			mDataController.load(savedInstanceState);
 		}
+
 		mListAdapter.notifyDataSetChanged();
 		mSpinnerAdapter.notifyDataSetChanged();
 
