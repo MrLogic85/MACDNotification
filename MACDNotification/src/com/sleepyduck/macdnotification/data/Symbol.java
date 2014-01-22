@@ -149,6 +149,30 @@ public class Symbol extends XMLParsableAdaptor {
 		return mMACDOld;
 	}
 
+	public float getRuleNo1Histogram() {
+		return mRuleNo1Histogram;
+	}
+
+	public float getRuleNo1HistogramOld() {
+		return mRuleNo1HistogramOld;
+	}
+
+	public float getRuleNo1Stochastic() {
+		return mRuleNo1Stochastic;
+	}
+
+	public float getRuleNo1StochasticOld() {
+		return mRuleNo1StochasticOld;
+	}
+
+	public float getRuleNo1SMA() {
+		return mRuleNo1SMA;
+	}
+
+	public float getRuleNo1SMAOld() {
+		return mRuleNo1SMAOld;
+	}
+
 	public CharSequence getDataText() {
 		if (hasValidData()) {
 			String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
@@ -166,11 +190,23 @@ public class Symbol extends XMLParsableAdaptor {
 	}
 
 	public boolean isRuleNo1HistogramPositive() {
-		return mRuleNo1Histogram > 0;
+		return mRuleNo1Histogram >= 0;
 	}
 
 	public boolean isRuleNo1StochasticPositive() {
-		return mRuleNo1Stochastic > 0;
+		return mRuleNo1Stochastic >= 0;
+	}
+
+	public boolean wasRuleNo1SMALessThanValue() {
+		return mValueOld > mRuleNo1SMAOld;
+	}
+
+	public boolean wasRuleNo1HistogramPositive() {
+		return mRuleNo1HistogramOld >= 0;
+	}
+
+	public boolean wasRuleNo1StochasticPositive() {
+		return mRuleNo1StochasticOld >= 0;
 	}
 
 	public boolean isNewDataDay(long newTime) {
