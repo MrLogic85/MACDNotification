@@ -9,7 +9,7 @@ public class Symbol extends XMLParsableAdaptor {
 	private String mName = "";
 	private String mDisplayName = "";
 	private Float mRuleNo1Valuation;
-    private StockDataList mData;
+	private StockDataList mData;
 	private int mRetryCounter = 3;
 
 	public Symbol(String name, Float ruleNo1Valuation) {
@@ -53,7 +53,7 @@ public class Symbol extends XMLParsableAdaptor {
 	}
 
 	public void setStockData(StockDataList data) {
-        mData = data;
+		mData = data;
 	}
 
 	public String getName() {
@@ -74,11 +74,11 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public CharSequence getDataText() {
 		if (hasStockData()) {
-            return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-                    mData.get(mData.size()-1).Close,
-                    mData.get(mData.size()-2).Close,
-                    mData.get(mData.size()-1).get(StockEnum.MACD_12_26),
-                    mData.get(mData.size()-2).get(StockEnum.MACD_12_26));
+			return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+					mData.get(mData.size()-1).Close,
+					mData.get(mData.size()-2).Close,
+					mData.get(mData.size()-1).get(StockEnum.MACD_12_26),
+					mData.get(mData.size()-2).get(StockEnum.MACD_12_26));
 		}
 		return "";
 	}
@@ -91,35 +91,57 @@ public class Symbol extends XMLParsableAdaptor {
 		return mDisplayName.length() > 0;
 	}
 
+	public boolean hasRuleNo1Valuation() {
+		return mRuleNo1Valuation != null;
+	}
+
 	public boolean doRetry() {
 		return mRetryCounter -- > 0;
 	}
 
-    public boolean isRuleNo1SMALessThanValue() {
-        return mData.get(mData.size()-1).Close_SMA_10 <= mData.get(mData.size()-1).Close;
-    }
+	public boolean isRuleNo1SMALessThanValue() {
+		return mData.get(mData.size()-1).Close_SMA_10 <= mData.get(mData.size()-1).Close;
+	}
 
-    public boolean isRuleNo1HistogramPositive() {
-        return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9)
-                <= mData.get(mData.size()-1).get(StockEnum.MACD_8_17);
-    }
+	public boolean isRuleNo1HistogramPositive() {
+		return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9)
+				<= mData.get(mData.size()-1).get(StockEnum.MACD_8_17);
+	}
 
-    public boolean isRuleNo1StochasticPositive() {
-        return mData.get(mData.size()-1).Stochastic_Signal_14_5_Slow
-                <= mData.get(mData.size()-1).Stochastic_14_5_Slow;
-    }
+	public boolean isRuleNo1StochasticPositive() {
+		return mData.get(mData.size()-1).Stochastic_Signal_14_5_Slow
+				<= mData.get(mData.size()-1).Stochastic_14_5_Slow;
+	}
 
-    public boolean wasRuleNo1SMALessThanValue() {
-        return mData.get(mData.size()-2).Close_SMA_10 <= mData.get(mData.size()-2).Close;
-    }
+	public boolean isRuleNo1StochasticAbove80() {
+		return mData.get(mData.size()-1).Stochastic_14_5_Slow >= 80;
+	}
 
-    public boolean wasRuleNo1HistogramPositive() {
-        return mData.get(mData.size()-2).get(StockEnum.MACD_Histogram_8_17_9)
-                <= mData.get(mData.size()-2).get(StockEnum.MACD_8_17);
-    }
+	public boolean isRuleNo1StochasticBelow20() {
+		return mData.get(mData.size()-1).Stochastic_14_5_Slow <= 20;
+	}
 
-    public boolean wasRuleNo1StochasticPositive() {
-        return mData.get(mData.size()-2).get(StockEnum.Stochastic_Signal_14_5_Slow)
-                <= mData.get(mData.size()-2).get(StockEnum.Stochastic_14_5_Slow);
-    }
+	public boolean isValueAboveValuation() {
+		return mRuleNo1Valuation != null
+				&& mData.get(mData.size()-1).Close > mRuleNo1Valuation;
+	}
+
+	public boolean isValueBelowValuation50() {
+		return mRuleNo1Valuation != null
+				&& mData.get(mData.size()-1).Close < mRuleNo1Valuation/2F;
+	}
+
+	public boolean wasRuleNo1SMALessThanValue() {
+		return mData.get(mData.size()-2).Close_SMA_10 <= mData.get(mData.size()-2).Close;
+	}
+
+	public boolean wasRuleNo1HistogramPositive() {
+		return mData.get(mData.size()-2).get(StockEnum.MACD_Histogram_8_17_9)
+				<= mData.get(mData.size()-2).get(StockEnum.MACD_8_17);
+	}
+
+	public boolean wasRuleNo1StochasticPositive() {
+		return mData.get(mData.size()-2).get(StockEnum.Stochastic_Signal_14_5_Slow)
+				<= mData.get(mData.size()-2).get(StockEnum.Stochastic_14_5_Slow);
+	}
 }

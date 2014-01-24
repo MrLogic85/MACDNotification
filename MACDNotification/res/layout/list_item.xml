@@ -22,33 +22,10 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" />
         
-        <LinearLayout
+        <com.sleepyduck.macdnotification.RuleNo1Indicators
+            android:id="@+id/ruleNo1Indicators"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:gravity="bottom">
-            <TextView
-                android:id="@+id/ruleNo1Text"
-                android:layout_width="wrap_content"
-                android:layout_height="fill_parent"
-                android:text="Rule #1:"
-                android:gravity="center_vertical"
-                android:layout_marginEnd="10dp"/>
-            <ImageView
-                android:id="@+id/ruleNo1SMAIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"/>
-            <ImageView
-                android:id="@+id/ruleNo1StochasticIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"/>
-            <ImageView
-                android:id="@+id/ruleNo1MACDIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"/>
-        </LinearLayout>
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
     <ImageView

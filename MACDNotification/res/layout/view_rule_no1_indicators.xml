@@ -1,0 +1,44 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="bottom" >
+
+    <TextView
+        android:id="@+id/ruleNo1Text"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_marginEnd="10dp"
+        android:gravity="center_vertical"
+        android:text="Rule #1:" />
+
+    <ImageView
+        android:id="@+id/ruleNo1SMAIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp" />
+
+    <ImageView
+        android:id="@+id/ruleNo1StochasticIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp" />
+
+    <ImageView
+        android:id="@+id/ruleNo1MACDIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp" />
+
+    <ImageView
+        android:id="@+id/ruleNo1StochasticOptionalIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp" />
+
+    <ImageView
+        android:id="@+id/ruleNo1ValueationIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp" />
+
+</LinearLayout>
