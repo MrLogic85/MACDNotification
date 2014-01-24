@@ -1,10 +1,5 @@
 package com.sleepyduck.macdnotification.data;
 
-import java.util.Calendar;
-import java.util.LinkedList;
-import java.util.List;
-
-import com.sleepyduck.macdnotification.StartupBroadcastReceiver;
 import com.sleepyduck.macdnotification.data.xml.XMLElement;
 import com.sleepyduck.macdnotification.data.xml.XMLParsableAdaptor;
 
@@ -14,17 +9,7 @@ public class Symbol extends XMLParsableAdaptor {
 	private String mName = "";
 	private String mDisplayName = "";
 	private Float mRuleNo1Valuation;
-	private Float mValue = -99999F;
-	private Float mValueOld = -99999F;
-	private Float mMACD = -99999F;
-	private Float mMACDOld = -99999F;
-	private float mRuleNo1Histogram = -99999F;
-	private float mRuleNo1HistogramOld = -99999F;
-	private float mRuleNo1Stochastic = -99999F;
-	private float mRuleNo1StochasticOld = -99999F;
-	private float mRuleNo1SMA = -99999F;
-	private float mRuleNo1SMAOld = -99999F;
-	private long mDataTime = 0L;
+    private StockDataList mData;
 	private int mRetryCounter = 3;
 
 	public Symbol(String name, Float ruleNo1Valuation) {
@@ -63,62 +48,12 @@ public class Symbol extends XMLParsableAdaptor {
 		}
 	}
 
-	public void populateList(List<Symbol> list) {
-		list.add(this);
-	}
-
-	public List<Symbol> asList() {
-		List<Symbol> list = new LinkedList<Symbol>();
-		populateList(list);
-		return list;
-	}
-
 	public void setDisplayName(String name) {
 		mDisplayName = name;
 	}
 
-	public void setValue(Float val) {
-		mValue = val;
-	}
-
-	public void setValueOld(Float val) {
-		mValueOld = val;
-	}
-
-	public void setMACD(Float val) {
-		mMACD = val;
-	}
-
-	public void setMACDOld(Float val) {
-		mMACDOld = val;
-	}
-
-	public void setDataTime(long dataTime) {
-		mDataTime = dataTime;
-	}
-
-	public void setRuleNo1Histogram(float hist) {
-		mRuleNo1Histogram = hist;
-	}
-
-	public void setRuleNo1HistogramOld(float hist) {
-		mRuleNo1HistogramOld = hist;
-	}
-
-	public void setRuleNo1Stochastic(float stoch) {
-		mRuleNo1Stochastic = stoch;
-	}
-
-	public void setRuleNo1StochasticOld(float stoch) {
-		mRuleNo1StochasticOld = stoch;
-	}
-
-	public void setRuleNo1SMA(float sma) {
-		mRuleNo1SMA = sma;
-	}
-
-	public void setRuleNo1SMAOld(float smaOld) {
-		mRuleNo1SMAOld = smaOld;
+	public void setStockData(StockDataList data) {
+        mData = data;
 	}
 
 	public String getName() {
@@ -133,110 +68,23 @@ public class Symbol extends XMLParsableAdaptor {
 		return mRuleNo1Valuation;
 	}
 
-	public float getValue() {
-		return mValue;
-	}
-
-	public float getValueOld() {
-		return mValueOld;
-	}
-
-	public float getMACD() {
-		return mMACD;
-	}
-
-	public float getMACDOld() {
-		return mMACDOld;
-	}
-
-	public float getRuleNo1Histogram() {
-		return mRuleNo1Histogram;
-	}
-
-	public float getRuleNo1HistogramOld() {
-		return mRuleNo1HistogramOld;
-	}
-
-	public float getRuleNo1Stochastic() {
-		return mRuleNo1Stochastic;
-	}
-
-	public float getRuleNo1StochasticOld() {
-		return mRuleNo1StochasticOld;
-	}
-
-	public float getRuleNo1SMA() {
-		return mRuleNo1SMA;
-	}
-
-	public float getRuleNo1SMAOld() {
-		return mRuleNo1SMAOld;
+	public StockDataList getStockData() {
+		return mData;
 	}
 
 	public CharSequence getDataText() {
-		if (hasValidData()) {
-			String text = String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-					mValue,
-					mValueOld,
-					mMACD,
-					mMACDOld);
-			return text;
+		if (hasStockData()) {
+            return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+                    mData.get(mData.size()-1).Close,
+                    mData.get(mData.size()-2).Close,
+                    mData.get(mData.size()-1).get(StockEnum.MACD_12_26),
+                    mData.get(mData.size()-2).get(StockEnum.MACD_12_26));
 		}
 		return "";
 	}
 
-	public boolean isRuleNo1SMALessThanValue() {
-		return mValue > mRuleNo1SMA;
-	}
-
-	public boolean isRuleNo1HistogramPositive() {
-		return mRuleNo1Histogram >= 0;
-	}
-
-	public boolean isRuleNo1StochasticPositive() {
-		return mRuleNo1Stochastic >= 0;
-	}
-
-	public boolean wasRuleNo1SMALessThanValue() {
-		return mValueOld > mRuleNo1SMAOld;
-	}
-
-	public boolean wasRuleNo1HistogramPositive() {
-		return mRuleNo1HistogramOld >= 0;
-	}
-
-	public boolean wasRuleNo1StochasticPositive() {
-		return mRuleNo1StochasticOld >= 0;
-	}
-
-	public boolean isNewDataDay(long newTime) {
-		if (mDataTime <= 0)
-			return true;
-
-		Calendar cal = Calendar.getInstance();
-		cal.setTimeInMillis(mDataTime);
-		int dataYear = cal.get(Calendar.YEAR);
-		int dataDay = cal.get(Calendar.DAY_OF_YEAR);
-		int dataHour = cal.get(Calendar.HOUR_OF_DAY);
-
-		cal.setTimeInMillis(newTime);
-		int newYear = cal.get(Calendar.YEAR);
-		int newDay = cal.get(Calendar.DAY_OF_YEAR);
-		int newHour = cal.get(Calendar.HOUR_OF_DAY);
-
-		if (dataYear == newYear) {
-			if (newDay == dataDay) {
-				return dataHour < StartupBroadcastReceiver.ALARM_HOUR && newHour >= StartupBroadcastReceiver.ALARM_HOUR;
-			} else {
-				return newDay > dataDay;
-			}
-		} else {
-			return newYear > dataYear;
-		}
-	}
-
-	public boolean hasValidData() {
-		return mMACD > -99999f;
+	public boolean hasStockData() {
+		return mData != null;
 	}
 
 	public boolean hasDisplayName() {
@@ -246,4 +94,32 @@ public class Symbol extends XMLParsableAdaptor {
 	public boolean doRetry() {
 		return mRetryCounter -- > 0;
 	}
+
+    public boolean isRuleNo1SMALessThanValue() {
+        return mData.get(mData.size()-1).Close_SMA_10 <= mData.get(mData.size()-1).Close;
+    }
+
+    public boolean isRuleNo1HistogramPositive() {
+        return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9)
+                <= mData.get(mData.size()-1).get(StockEnum.MACD_8_17);
+    }
+
+    public boolean isRuleNo1StochasticPositive() {
+        return mData.get(mData.size()-1).Stochastic_Signal_14_5_Slow
+                <= mData.get(mData.size()-1).Stochastic_14_5_Slow;
+    }
+
+    public boolean wasRuleNo1SMALessThanValue() {
+        return mData.get(mData.size()-2).Close_SMA_10 <= mData.get(mData.size()-2).Close;
+    }
+
+    public boolean wasRuleNo1HistogramPositive() {
+        return mData.get(mData.size()-2).get(StockEnum.MACD_Histogram_8_17_9)
+                <= mData.get(mData.size()-2).get(StockEnum.MACD_8_17);
+    }
+
+    public boolean wasRuleNo1StochasticPositive() {
+        return mData.get(mData.size()-2).get(StockEnum.Stochastic_Signal_14_5_Slow)
+                <= mData.get(mData.size()-2).get(StockEnum.Stochastic_14_5_Slow);
+    }
 }

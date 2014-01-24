@@ -15,11 +15,11 @@ import android.widget.ExpandableListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.sleepyduck.macdnotification.CalculateTechnicalIndicators.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
 import com.sleepyduck.macdnotification.data.Group;
 import com.sleepyduck.macdnotification.data.RetrieveDisplayName;
 import com.sleepyduck.macdnotification.data.RetrieveDisplayName.RetrieveDisplayNameListener;
+import com.sleepyduck.macdnotification.data.StockDataFetcher;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class ActivityMACD extends Activity {
@@ -35,7 +35,7 @@ public class ActivityMACD extends Activity {
 	private EditText mRuleNo1ValuationEditText;
 	private final DataController mDataController = new DataController();
 
-	private final MACDListener mMACDListener = new MACDListener() {
+	private final StockDataFetcher.StockDataListener mStockDataListener = new StockDataFetcher.StockDataListener() {
 		@Override
 		public void onMessage(String message) {
 			Toast.makeText(ActivityMACD.this, message, Toast.LENGTH_LONG).show();
@@ -43,13 +43,13 @@ public class ActivityMACD extends Activity {
 
 		@Override
 		public void onCalculationComplete(Symbol symbol) {
-			if (!symbol.hasValidData() && symbol.doRetry())
-				mMACDCalculator.execute(symbol);
+			if (!symbol.hasStockData() && symbol.doRetry())
+				mStockDataFetcher.execute(symbol);
 			else
 				mListAdapter.notifyDataSetChanged();
 		}
 	};
-	private final CalculateTechnicalIndicators mMACDCalculator = new CalculateTechnicalIndicators(mMACDListener);
+	private final StockDataFetcher mStockDataFetcher = new StockDataFetcher(mStockDataListener);
 
 	private final RetrieveDisplayNameListener mDisplayNameListener = new RetrieveDisplayNameListener() {
 		@Override
@@ -113,7 +113,7 @@ public class ActivityMACD extends Activity {
 		if (!mDataController.load(savedInstanceState)) {
 			mDataController.loadFromFile(this);
 			List<Symbol> dataList = mDataController.getAllSymbols();
-			mMACDCalculator.execute(dataList.toArray(new Symbol[dataList.size()]));
+			mStockDataFetcher.execute(dataList.toArray(new Symbol[dataList.size()]));
 			mRetrieveDisplayName.execute(dataList.toArray(new Symbol[dataList.size()]));
 		}
 
@@ -149,7 +149,7 @@ public class ActivityMACD extends Activity {
 					ruleNo1Valuation = Float.valueOf(mRuleNo1ValuationEditText.getText().toString());
 				} catch (NumberFormatException e) { }
 				Symbol symbol = mDataController.addSymbol(mGroupSpinner.getSelectedItemPosition(), symbolName, ruleNo1Valuation);
-				mMACDCalculator.execute(symbol);
+				mStockDataFetcher.execute(symbol);
 				mRetrieveDisplayName.execute(symbol);
 			}
 		} else {

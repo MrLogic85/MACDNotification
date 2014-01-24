@@ -15,8 +15,10 @@ import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.sleepyduck.macdnotification.CalculateTechnicalIndicators.MACDListener;
 import com.sleepyduck.macdnotification.data.DataController;
+import com.sleepyduck.macdnotification.data.StockDataFetcher;
+import com.sleepyduck.macdnotification.data.StockDataList;
+import com.sleepyduck.macdnotification.data.StockEnum;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 public class StartupBroadcastReceiver extends BroadcastReceiver {
@@ -25,20 +27,20 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	private Context mContext;
 	private int mIdCounter = 0;
 
-	private MACDListener listener = new MACDListener() {
+	private StockDataFetcher.StockDataListener listener = new StockDataFetcher.StockDataListener() {
 
 		@Override
 		public void onMessage(String message) {}
 
 		@Override
 		public void onCalculationComplete(Symbol symbol) {
-			if (!symbol.hasValidData() && symbol.doRetry())
-				mMACDCalculator.execute(symbol);
+			if (!symbol.hasStockData() && symbol.doRetry())
+				mStockDataFetcher.execute(symbol);
 			else
 				displayNotification(symbol);
 		}
 	};
-	private CalculateTechnicalIndicators mMACDCalculator = new CalculateTechnicalIndicators(listener);
+	private StockDataFetcher mStockDataFetcher = new StockDataFetcher(listener);
 
 	@Override
 	public void onReceive(final Context context, final Intent intent) {
@@ -64,7 +66,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 							handler.post(new Runnable() {
 								@Override
 								public void run() {
-									calculateMACDs(context);
+									fetchStockData(context);
 								}
 							});
 						}
@@ -72,15 +74,15 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 				}
 			}.start();
 		} else {
-			calculateMACDs(context);
+			fetchStockData(context);
 		}
 	}
 
-	private void calculateMACDs(Context context) {
+	private void fetchStockData(Context context) {
 		DataController dataController = new DataController();
 		dataController.loadFromFile(context);
 		List<Symbol> dataList = dataController.getAllSymbols();
-		mMACDCalculator .execute(dataList.toArray(new Symbol[dataList.size()]));
+		mStockDataFetcher.execute(dataList.toArray(new Symbol[dataList.size()]));
 	}
 
 	private boolean checkInternetConnection() {
@@ -115,7 +117,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	private void displayNotification(Symbol symbol) {
-		if (symbol.getMACD() <= -1f)
+		if (!symbol.hasStockData() || symbol.getStockData().size() > 1)
 			return;
 
 		notifyMACD(symbol);
@@ -124,20 +126,24 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 
 	private void notifyMACD(Symbol symbol) {
 		String buyOrSell;
-		if (symbol.getMACD() >= 0)
-			if (symbol.getMACD() * symbol.getMACDOld() > 0)
+        StockDataList data = symbol.getStockData();
+		if (data.get(data.size()-1).get(StockEnum.MACD_12_26) >= 0)
+			if (data.get(data.size()-1).get(StockEnum.MACD_12_26)
+                    * data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
 				buyOrSell = "Keep";
 			else
 				buyOrSell = "Buy";
-		else if (symbol.getMACD() * symbol.getMACDOld() > 0)
+		else if (data.get(data.size()-1).get(StockEnum.MACD_12_26)
+                * data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
 			buyOrSell = "Don't buy";
 		else
 			buyOrSell = "Sell";
 
 		// Calculate the value of MACD after three days with the same trend
 		if (buyOrSell.equals("Don't buy")) {
-			float trend = symbol.getMACD() - symbol.getMACDOld();
-			float days = (-symbol.getMACD()) / trend;
+			float trend = data.get(data.size()-1).get(StockEnum.MACD_12_26)
+                    - data.get(data.size()-2).get(StockEnum.MACD_12_26);
+			float days = -data.get(data.size()-1).get(StockEnum.MACD_12_26) / trend;
 			if (days > 0 && days < 4)
 				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";
 		}

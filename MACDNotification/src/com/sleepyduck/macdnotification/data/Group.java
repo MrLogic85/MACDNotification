@@ -25,9 +25,6 @@ public class Group extends XMLParsableAdaptor {
 				if (name.equals(Symbol.class.getSimpleName())) {
 					Symbol symbol = new Symbol(xmlSymbol);
 					mSymbols.add(symbol);
-				} else if (name.equals(Fund.class.getSimpleName())) {
-					Fund fund = new Fund(xmlSymbol);
-					mSymbols.add(fund);
 				}
 			}
 		}

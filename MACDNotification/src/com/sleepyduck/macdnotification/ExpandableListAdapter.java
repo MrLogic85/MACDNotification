@@ -18,6 +18,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.sleepyduck.macdnotification.data.Group;
+import com.sleepyduck.macdnotification.data.StockData;
+import com.sleepyduck.macdnotification.data.StockDataList;
+import com.sleepyduck.macdnotification.data.StockEnum;
 import com.sleepyduck.macdnotification.data.Symbol;
 
 /**
@@ -94,18 +97,27 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 					symbolText.setText(symbol.getName());
 				}
 				dataText.setText(symbol.getDataText());
-				if (symbol.getMACD() > -99999f) {
-					if (symbol.getMACD() >= 0f) {
+				if (symbol.hasStockData()) {
+                    StockDataList data = symbol.getStockData();
+					if (data.get(data.size()-1).get(StockEnum.MACD_12_26) >= 0f) {
 						symbolText.setTextColor(Color.GREEN);
 					} else {
 						symbolText.setTextColor(Color.RED);
 					}
-					ruleNo1SMA.setImageResource(symbol.isRuleNo1SMALessThanValue() ? R.drawable.ic_green : R.drawable.ic_red);
-					ruleNo1MACD.setImageResource(symbol.isRuleNo1HistogramPositive() ? R.drawable.ic_green : R.drawable.ic_red);
-					ruleNo1Stochastic.setImageResource(symbol.isRuleNo1StochasticPositive() ? R.drawable.ic_green : R.drawable.ic_red);
+					ruleNo1SMA.setImageResource(symbol.isRuleNo1SMALessThanValue()
+                            ? R.drawable.ic_green
+                            : R.drawable.ic_red);
+					ruleNo1MACD.setImageResource(symbol.isRuleNo1HistogramPositive()
+                            ? R.drawable.ic_green
+                            : R.drawable.ic_red);
+					ruleNo1Stochastic.setImageResource(symbol.isRuleNo1StochasticPositive()
+                            ? R.drawable.ic_green
+                            : R.drawable.ic_red);
 
 					if (symbol.getRuleNo1Valuation() != null) {
-						ruleNo1Text.setText("Rule #1 (" + toPercent(symbol.getRuleNo1Valuation(), symbol.getValue()) + "%):");
+						ruleNo1Text.setText("Rule #1 ("
+                                + toPercent(symbol.getRuleNo1Valuation(),
+                                data.get(data.size()-1).Close) + "%):");
 					} else {
 						ruleNo1Text.setText("Rule #1:");
 					}

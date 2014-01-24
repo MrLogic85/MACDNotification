@@ -119,27 +119,29 @@ public class RetrieveDisplayName {
 				@Override
 				public void run() {
 					while (synchedSymbols.size() > 0) {
-						Symbol symbol = synchedSymbols.remove(0);
-						Log.d(LOG_TAG, "Calculate MACD for " + symbol.getName());
-						for (Symbol sym : symbol.asList()) {
-							if (sym.hasDisplayName()) {
-								publishResult(sym);
-							} else {
-								URI uri = buildURI(sym.getName());
-								if (uri != null) {
-									String uriData = fetchData(uri);
-									if (uriData != null) {
-										String name = parseName(uriData);
-										if (name != null && name.length() > 0) {
-											sym.setDisplayName(name);
-										}
-									}
-								} else {
-									break;
-								}
-							}
-						}
-						publishResult(symbol);
+                        try {
+                            Symbol sym = synchedSymbols.remove(0);
+                            Log.d(LOG_TAG, "Retrieve display name for " + sym.getName());
+                            if (sym.hasDisplayName()) {
+                                publishResult(sym);
+                            } else {
+                                URI uri = buildURI(sym.getName());
+                                if (uri != null) {
+                                    String uriData = fetchData(uri);
+                                    if (uriData != null) {
+                                        String name = parseName(uriData);
+                                        if (name != null && name.length() > 0) {
+                                            sym.setDisplayName(name);
+                                        }
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                            publishResult(sym);
+                        } catch (IndexOutOfBoundsException e) {
+                            Log.e(LOG_TAG, "Synchonization error: ", e);
+                        }
 					}
 				}
 			}.start();
