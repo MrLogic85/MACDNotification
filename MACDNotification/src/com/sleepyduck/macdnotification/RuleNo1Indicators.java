@@ -81,7 +81,7 @@ public class RuleNo1Indicators extends LinearLayout {
 			}
 
 			if (mSymbol.hasRuleNo1Valuation()) {
-				mValue.setVisibility(GONE);
+				mValue.setVisibility(VISIBLE);
 				if (mSymbol.isValueBelowValuation50()) {
 					mValue.setImageResource(R.drawable.ic_green);
 				} else if (mSymbol.isValueAboveValuation()) {
