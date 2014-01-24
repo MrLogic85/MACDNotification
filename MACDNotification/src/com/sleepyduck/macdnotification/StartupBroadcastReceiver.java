@@ -118,6 +118,11 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		if (symbol.getMACD() <= -1f)
 			return;
 
+		notifyMACD(symbol);
+		notifyRuleNo1(symbol);
+	}
+
+	private void notifyMACD(Symbol symbol) {
 		String buyOrSell;
 		if (symbol.getMACD() >= 0)
 			if (symbol.getMACD() * symbol.getMACDOld() > 0)
@@ -141,12 +146,37 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 			return;
 		}
 
+		notify(buyOrSell + " " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "MACD Notification");
+	}
+
+	private void notifyRuleNo1(Symbol symbol) {
+		if (symbol.isRuleNo1HistogramPositive()
+				&& symbol.isRuleNo1SMALessThanValue()
+				&& symbol.isRuleNo1StochasticPositive()) {
+			if (!symbol.wasRuleNo1HistogramPositive()
+					|| !symbol.wasRuleNo1SMALessThanValue()
+					|| !symbol.wasRuleNo1StochasticPositive()) {
+				notify("Buy " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
+			}
+		} else if (!symbol.isRuleNo1HistogramPositive()
+				&& !symbol.isRuleNo1SMALessThanValue()
+				&& !symbol.isRuleNo1StochasticPositive()) {
+			if (symbol.wasRuleNo1HistogramPositive()
+					|| symbol.wasRuleNo1SMALessThanValue()
+					|| symbol.wasRuleNo1StochasticPositive()) {
+				notify("Sell " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
+			}
+		}
+	}
+
+	private void notify(String text, String title) {
+
 		final NotificationManager notificationManager = (NotificationManager) mContext
 				.getSystemService(Context.NOTIFICATION_SERVICE);
 		final NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext);
-		builder.setContentTitle("MACD Notification");
+		builder.setContentTitle(title);
 
-		builder.setContentText(buyOrSell + " " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()));
+		builder.setContentText(text);
 		builder.setSmallIcon(R.drawable.ic_launcher_small);
 		final PendingIntent intent = PendingIntent.getActivity(mContext, 0, new Intent(),
 				PendingIntent.FLAG_UPDATE_CURRENT);

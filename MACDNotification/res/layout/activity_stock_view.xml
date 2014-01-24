@@ -1,0 +1,82 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="5dp"
+    tools:context=".ActivityStockView" >
+
+    <TextView
+        android:id="@+id/textViewName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:text="Google Inc. (GOOG)"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <TextView
+        android:id="@+id/textViewValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/linearLayout1"
+        android:layout_below="@+id/textViewName"
+        android:text="1163,70" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textViewName"
+        android:layout_below="@+id/textViewValue"
+        android:gravity="bottom" >
+
+        <TextView
+            android:id="@+id/ruleNo1Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:gravity="center_vertical"
+            android:text="Rule #1:" />
+
+        <ImageView
+            android:id="@+id/ruleNo1SMAIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_green" />
+
+        <ImageView
+            android:id="@+id/ruleNo1StochasticIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_green" />
+
+        <ImageView
+            android:id="@+id/ruleNo1MACDIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_red" />
+    </LinearLayout>
+
+    <com.androidplot.xy.XYPlot
+        android:id="@+id/plot1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/linearLayout1"
+        android:ems="10" >
+    </com.androidplot.xy.XYPlot>
+
+    <ImageView
+        android:id="@+id/imageButton1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="5dp"
+        android:layout_alignTop="@+id/textViewName"
+        android:layout_toRightOf="@+id/textViewName"
+        android:clickable="true"
+        android:onClick="onYahooClicked"
+        android:src="@drawable/yahoo_icon" />
+
+</RelativeLayout>
