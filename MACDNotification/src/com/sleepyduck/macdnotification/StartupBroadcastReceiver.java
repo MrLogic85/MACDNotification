@@ -117,7 +117,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	private void displayNotification(Symbol symbol) {
-		if (!symbol.hasStockData() || symbol.getStockData().size() > 1)
+		if (!symbol.hasStockData() || symbol.getStockData().size() < 2)
 			return;
 
 		notifyMACD(symbol);
@@ -126,15 +126,15 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 
 	private void notifyMACD(Symbol symbol) {
 		String buyOrSell;
-        StockDataList data = symbol.getStockData();
+		StockDataList data = symbol.getStockData();
 		if (data.get(data.size()-1).get(StockEnum.MACD_12_26) >= 0)
 			if (data.get(data.size()-1).get(StockEnum.MACD_12_26)
-                    * data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
+					* data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
 				buyOrSell = "Keep";
 			else
 				buyOrSell = "Buy";
 		else if (data.get(data.size()-1).get(StockEnum.MACD_12_26)
-                * data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
+				* data.get(data.size()-2).get(StockEnum.MACD_12_26) > 0)
 			buyOrSell = "Don't buy";
 		else
 			buyOrSell = "Sell";
@@ -142,7 +142,7 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 		// Calculate the value of MACD after three days with the same trend
 		if (buyOrSell.equals("Don't buy")) {
 			float trend = data.get(data.size()-1).get(StockEnum.MACD_12_26)
-                    - data.get(data.size()-2).get(StockEnum.MACD_12_26);
+					- data.get(data.size()-2).get(StockEnum.MACD_12_26);
 			float days = -data.get(data.size()-1).get(StockEnum.MACD_12_26) / trend;
 			if (days > 0 && days < 4)
 				buyOrSell = "Possible buy in " + ((int) (days + 1f)) + " days for";
@@ -156,22 +156,10 @@ public class StartupBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	private void notifyRuleNo1(Symbol symbol) {
-		if (symbol.isRuleNo1HistogramPositive()
-				&& symbol.isRuleNo1SMALessThanValue()
-				&& symbol.isRuleNo1StochasticPositive()) {
-			if (!symbol.wasRuleNo1HistogramPositive()
-					|| !symbol.wasRuleNo1SMALessThanValue()
-					|| !symbol.wasRuleNo1StochasticPositive()) {
-				notify("Buy " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
-			}
-		} else if (!symbol.isRuleNo1HistogramPositive()
-				&& !symbol.isRuleNo1SMALessThanValue()
-				&& !symbol.isRuleNo1StochasticPositive()) {
-			if (symbol.wasRuleNo1HistogramPositive()
-					|| symbol.wasRuleNo1SMALessThanValue()
-					|| symbol.wasRuleNo1StochasticPositive()) {
-				notify("Sell " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
-			}
+		if (symbol.isRuleNo1Buy() && !symbol.wasRuleNo1Buy()) {
+			notify("Buy " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
+		} else if (symbol.isRuleNo1Sell() && !symbol.wasRuleNo1Sell()) {
+			notify("Sell " + (symbol.getDisplayName().length() > 0 ? symbol.getDisplayName() + " (" + symbol.getName() + ")" : symbol.getName()), "Rule #1 Technical Indicators");
 		}
 	}
 

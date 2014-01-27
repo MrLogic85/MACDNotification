@@ -93,11 +93,11 @@ public class StockDataFetcher {
 					super.ignorableWhitespace(ch, start, length);
 					final String chars = String.copyValueOf(ch, start, length);
 					if (mClose) {
-                        data.get(0).Close = Float.valueOf(chars);
+						data.get(0).Close = Float.valueOf(chars);
 					} else if (mHigh) {
-                        data.get(0).High = Float.valueOf(chars);
+						data.get(0).High = Float.valueOf(chars);
 					} else if (mLow) {
-                        data.get(0).Low = Float.valueOf(chars);
+						data.get(0).Low = Float.valueOf(chars);
 					}
 				}
 
@@ -108,7 +108,7 @@ public class StockDataFetcher {
 					mHigh = qName.toLowerCase().equals("high");
 					mLow = qName.toLowerCase().equals("low");
 					if (qName.toLowerCase().equals("quote")) {
-                        data.add(0, new StockData());
+						data.add(0, new StockData());
 					}
 				}
 			});
@@ -124,7 +124,7 @@ public class StockDataFetcher {
 		// Reverse the data so that the oldest value is first
 		if (data.size() >= 0) {
 			symbol.setStockData(data);
-            data.calculateIndicators();
+			data.calculateIndicators();
 			return true;
 		} else {
 			String message = symbol + " could not be found";
@@ -135,9 +135,11 @@ public class StockDataFetcher {
 	}
 
 	private boolean validateData(StockDataList data) {
-		if (data.size() == 0)
+		if (data == null) {
 			return false;
-        for (StockData st : data)
+		} else if (data.size() == 0)
+			return false;
+		for (StockData st : data)
 			if (st.Close < 0)
 				return false;
 		return true;
@@ -173,26 +175,26 @@ public class StockDataFetcher {
 					while (synchedSymbols.size() > 0) {
 						Symbol sym = synchedSymbols.remove(0);
 						Log.d(LOG_TAG, "Calculate MACD for " + sym.getName());
-                        if (sym.hasStockData()) {
-                            publishResult(sym);
-                        } else {
-                            URI uri = buildURI(sym.getName());
-                            if (uri != null) {
-                                String uriData = fetchData(uri);
-                                if (uriData != null) {
-                                    StockDataList pData = parseData(uriData);
-                                    if (validateData(pData)) {
-                                        preCalculateIndicators(sym, pData);
-                                    } else {
-                                        break;
-                                    }
-                                } else {
-                                    break;
-                                }
-                            } else {
-                                break;
-                            }
-                        }
+						if (sym.hasStockData()) {
+							publishResult(sym);
+						} else {
+							URI uri = buildURI(sym.getName());
+							if (uri != null) {
+								String uriData = fetchData(uri);
+								if (uriData != null) {
+									StockDataList pData = parseData(uriData);
+									if (validateData(pData)) {
+										preCalculateIndicators(sym, pData);
+									} else {
+										break;
+									}
+								} else {
+									break;
+								}
+							} else {
+								break;
+							}
+						}
 						publishResult(sym);
 					}
 				}

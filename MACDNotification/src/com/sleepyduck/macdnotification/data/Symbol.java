@@ -74,17 +74,11 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public CharSequence getDataText() {
 		if (hasStockData()) {
-			return String.format("%2.2f, %2.2f (%2.2f), %2.2f (%2.2f)",
+			return String.format("Price %.2f (%+.2f%%), MACD %.2f (%+.2f)",
 					mData.get(mData.size()-1).Close,
-					mData.get(mData.size()-1).get(StockEnum.Stochastic_14_5_Slow),
-					mData.get(mData.size()-1).get(StockEnum.Stochastic_Signal_14_5_Slow),
-					mData.get(mData.size()-1).get(StockEnum.MACD_8_17),
-					mData.get(mData.size()-1).get(StockEnum.MACD_Signal_8_17_9));
-			/*return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
-					mData.get(mData.size()-1).Close,
-					mData.get(mData.size()-2).Close,
+					(mData.get(mData.size()-1).Close-mData.get(mData.size()-2).Close)/mData.get(mData.size()-2).Close*100,
 					mData.get(mData.size()-1).get(StockEnum.MACD_12_26),
-					mData.get(mData.size()-2).get(StockEnum.MACD_12_26));*/
+					mData.get(mData.size()-2).get(StockEnum.MACD_12_26)-mData.get(mData.size()-1).get(StockEnum.MACD_12_26));
 		}
 		return "";
 	}
@@ -105,17 +99,32 @@ public class Symbol extends XMLParsableAdaptor {
 		return mRetryCounter -- > 0;
 	}
 
+	public boolean isRuleNo1Buy() {
+		return isRuleNo1Buy(mData.size()-1);
+	}
+
+	public boolean wasRuleNo1Buy() {
+		return isRuleNo1Buy(mData.size()-2);
+	}
+
+	public boolean isRuleNo1Sell() {
+		return isRuleNo1Sell(mData.size()-1);
+	}
+
+	public boolean wasRuleNo1Sell() {
+		return isRuleNo1Sell(mData.size()-2);
+	}
+
 	public boolean isRuleNo1SMALessThanValue() {
-		return mData.get(mData.size()-1).Close_SMA_10 <= mData.get(mData.size()-1).Close;
+		return isRuleNo1SMALessThanValue(mData.size()-1);
 	}
 
 	public boolean isRuleNo1HistogramPositive() {
-		return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9) >= 0;
+		return isRuleNo1HistogramPositive(mData.size()-1);
 	}
 
 	public boolean isRuleNo1StochasticPositive() {
-		return mData.get(mData.size()-1).Stochastic_Signal_14_5_Slow
-				<= mData.get(mData.size()-1).Stochastic_14_5_Slow;
+		return isRuleNo1StochasticPositive(mData.size()-1);
 	}
 
 	public boolean isRuleNo1StochasticAbove80() {
@@ -137,16 +146,34 @@ public class Symbol extends XMLParsableAdaptor {
 	}
 
 	public boolean wasRuleNo1SMALessThanValue() {
-		return mData.get(mData.size()-2).Close_SMA_10 <= mData.get(mData.size()-2).Close;
+		return isRuleNo1SMALessThanValue(mData.size()-2);
 	}
 
 	public boolean wasRuleNo1HistogramPositive() {
-		return mData.get(mData.size()-2).get(StockEnum.MACD_Histogram_8_17_9)
-				<= mData.get(mData.size()-2).get(StockEnum.MACD_8_17);
+		return isRuleNo1HistogramPositive(mData.size()-2);
 	}
 
 	public boolean wasRuleNo1StochasticPositive() {
-		return mData.get(mData.size()-2).get(StockEnum.Stochastic_Signal_14_5_Slow)
-				<= mData.get(mData.size()-2).get(StockEnum.Stochastic_14_5_Slow);
+		return isRuleNo1StochasticPositive(mData.size()-2);
+	}
+
+	private boolean isRuleNo1Buy(int i) {
+		return isRuleNo1SMALessThanValue(i) && isRuleNo1StochasticPositive(i) && isRuleNo1HistogramPositive(i);
+	}
+
+	private boolean isRuleNo1Sell(int i) {
+		return !isRuleNo1SMALessThanValue(i) && !isRuleNo1StochasticPositive(i) && !isRuleNo1HistogramPositive(i);
+	}
+
+	private boolean isRuleNo1SMALessThanValue(int i) {
+		return mData.get(i).Close_SMA_10 <= mData.get(i).Close;
+	}
+
+	private boolean isRuleNo1StochasticPositive(int i) {
+		return mData.get(i).Stochastic_Signal_14_5_Slow <= mData.get(i).Stochastic_14_5_Slow;
+	}
+
+	private boolean isRuleNo1HistogramPositive(int i) {
+		return mData.get(i).get(StockEnum.MACD_Histogram_8_17_9) >= 0;
 	}
 }
