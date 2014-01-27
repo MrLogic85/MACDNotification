@@ -74,11 +74,17 @@ public class Symbol extends XMLParsableAdaptor {
 
 	public CharSequence getDataText() {
 		if (hasStockData()) {
-			return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
+			return String.format("%2.2f, %2.2f (%2.2f), %2.2f (%2.2f)",
+					mData.get(mData.size()-1).Close,
+					mData.get(mData.size()-1).get(StockEnum.Stochastic_14_5_Slow),
+					mData.get(mData.size()-1).get(StockEnum.Stochastic_Signal_14_5_Slow),
+					mData.get(mData.size()-1).get(StockEnum.MACD_8_17),
+					mData.get(mData.size()-1).get(StockEnum.MACD_Signal_8_17_9));
+			/*return String.format("Price %2.2f (%2.2f), MACD %2.2f (%2.2f)",
 					mData.get(mData.size()-1).Close,
 					mData.get(mData.size()-2).Close,
 					mData.get(mData.size()-1).get(StockEnum.MACD_12_26),
-					mData.get(mData.size()-2).get(StockEnum.MACD_12_26));
+					mData.get(mData.size()-2).get(StockEnum.MACD_12_26));*/
 		}
 		return "";
 	}
@@ -104,8 +110,7 @@ public class Symbol extends XMLParsableAdaptor {
 	}
 
 	public boolean isRuleNo1HistogramPositive() {
-		return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9)
-				<= mData.get(mData.size()-1).get(StockEnum.MACD_8_17);
+		return mData.get(mData.size()-1).get(StockEnum.MACD_Histogram_8_17_9) >= 0;
 	}
 
 	public boolean isRuleNo1StochasticPositive() {
