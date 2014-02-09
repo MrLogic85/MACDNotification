@@ -47,7 +47,7 @@ public class StockDataFetcher {
 				calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
 
 		try {
-			String query = "select Close,High,Low from yahoo.finance.historicaldata where startDate=\"" + start
+			String query = "select Adj_Close,High,Low from yahoo.finance.historicaldata where startDate=\"" + start
 					+ "\" AND symbol=\"" + symbol + "\" AND endDate=\"" + end + "\"";
 			query = query.replace(" ", "%20").replace("=", "%3D").replace("\"", "%22").replace("^", "%5E").replace(",", "%2C");
 			query = "http://query.yahooapis.com/v1/public/yql?q=" + query;
@@ -104,7 +104,7 @@ public class StockDataFetcher {
 				@Override
 				public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) throws SAXException {
 					super.startElement(uri, localName, qName, attributes);
-					mClose = qName.toLowerCase().equals("close");
+					mClose = qName.toLowerCase().equals("adj_close");
 					mHigh = qName.toLowerCase().equals("high");
 					mLow = qName.toLowerCase().equals("low");
 					if (qName.toLowerCase().equals("quote")) {

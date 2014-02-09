@@ -1,13 +1,16 @@
 package com.sleepyduck.macdnotification;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.sleepyduck.macdnotification.data.Backtrack;
 import com.sleepyduck.macdnotification.data.StockDataList;
 import com.sleepyduck.macdnotification.data.Symbol;
 
@@ -36,9 +39,9 @@ public class ActivityStockView extends Activity {
 			} else {
 				name.setText(mSymbol.getName());
 			}
-            if (mSymbol.hasStockData()) {
-                StockDataList data = mSymbol.getStockData();
-                value.setText("" + data.get(data.size()-1).Close);
+			if (mSymbol.hasStockData()) {
+				StockDataList data = mSymbol.getStockData();
+				value.setText("" + data.get(data.size()-1).Close);
 
 				ruleNo1SMA.setImageResource(mSymbol.isRuleNo1SMALessThanValue() ? R.drawable.ic_green : R.drawable.ic_red);
 				ruleNo1MACD.setImageResource(mSymbol.isRuleNo1HistogramPositive() ? R.drawable.ic_green : R.drawable.ic_red);
@@ -56,11 +59,18 @@ public class ActivityStockView extends Activity {
 	}
 
 	public void onYahooClicked(View view) {
-        Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + mSymbol.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(uri);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+		Uri uri = Uri.parse("http://finance.yahoo.com/q/ta?s=" + mSymbol.getName() + "&t=1y&l=on&z=l&q=l&p=e18%2Cb&a=m26-12-9%2Css&c=");
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.setData(uri);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		startActivity(intent);
+	}
+
+	public void onBacktrackClicked(View view) {
+		Log.d("", "Starting Backtracking");
+		Backtrack.Report report = new Backtrack().run(mSymbol, 20000f, false, 13.5f, 0.15f, 0.5f);
+		new AlertDialog.Builder(this).setMessage(report.toString()).setPositiveButton("OK", null).show();
+		Log.d("", "Backtracking done");
 	}
 
 }

@@ -157,11 +157,11 @@ public class Symbol extends XMLParsableAdaptor {
 		return isRuleNo1StochasticPositive(mData.size()-2);
 	}
 
-	private boolean isRuleNo1Buy(int i) {
+	boolean isRuleNo1Buy(int i) {
 		return isRuleNo1SMALessThanValue(i) && isRuleNo1StochasticPositive(i) && isRuleNo1HistogramPositive(i);
 	}
 
-	private boolean isRuleNo1Sell(int i) {
+	boolean isRuleNo1Sell(int i) {
 		return !isRuleNo1SMALessThanValue(i) && !isRuleNo1StochasticPositive(i) && !isRuleNo1HistogramPositive(i);
 	}
 

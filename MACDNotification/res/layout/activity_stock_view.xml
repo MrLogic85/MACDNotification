@@ -58,6 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:src="@drawable/ic_red" />
+
     </LinearLayout>
 
     <com.androidplot.xy.XYPlot
@@ -78,5 +79,17 @@
         android:clickable="true"
         android:onClick="onYahooClicked"
         android:src="@drawable/yahoo_icon" />
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/textViewValue"
+        android:layout_marginLeft="20dp"
+        android:layout_toRightOf="@+id/linearLayout1"
+        android:background="#FFFFFFFF"
+        android:clickable="true"
+        android:onClick="onBacktrackClicked"
+        android:src="@drawable/ic_chart_32" />
 
 </RelativeLayout>
